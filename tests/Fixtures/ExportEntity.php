@@ -16,6 +16,8 @@ class ExportEntity
 {
     // region builtin-typed property w/o getter
     #[ExportableProperty]
+    #[ORM\Id]
+    #[ORM\Column]
     public int $id = 0;
     // endregion
 

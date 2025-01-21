@@ -7,6 +7,7 @@ declare(strict_types=1);
 namespace Vrok\ImportExport\Tests;
 
 use Vrok\ImportExport\Helper;
+use Vrok\ImportExport\Tests\Fixtures\ExportEntity;
 use Vrok\ImportExport\Tests\Fixtures\ImportEntity;
 use Vrok\ImportExport\Tests\Fixtures\NestedDTO;
 use Vrok\ImportExport\Tests\Fixtures\TestDTO;
@@ -372,14 +373,14 @@ class ImportTest extends AbstractOrmTestCase
                     'name'         => 'element1',
                 ],
                 [
-                    '_entityClass' => TestEntity::class,
-                    'description'  => 'element2',
+                    '_entityClass' => ExportEntity::class,
+                    'name'  => 'element2',
                 ],
             ],
         ];
 
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage("Given '_entityClass' Vrok\ImportExport\Tests\Fixtures\TestEntity is not a subclass/implementation of Vrok\ImportExport\Tests\Fixtures\DtoInterface!");
+        $this->expectExceptionMessage("Given '_entityClass' Vrok\ImportExport\Tests\Fixtures\ExportEntity is not a subclass/implementation of Vrok\ImportExport\Tests\Fixtures\DtoInterface!");
 
         $helper->fromArray($data, ImportEntity::class);
     }
@@ -553,7 +554,7 @@ class ImportTest extends AbstractOrmTestCase
         ];
 
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('Cannot create instance of the abstract class Vrok\ImportExport\Tests\ORM\AbstractOrmTestCase, concrete class needed!');
+        $this->expectExceptionMessage('Cannot create instance of the abstract class Vrok\ImportExport\Tests\AbstractOrmTestCase, concrete class needed!');
 
         $helper->fromArray($data, AbstractOrmTestCase::class);
     }
@@ -568,7 +569,7 @@ class ImportTest extends AbstractOrmTestCase
         ];
 
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('Cannot create instance of the abstract class Vrok\ImportExport\Tests\ORM\AbstractOrmTestCase, concrete class needed!');
+        $this->expectExceptionMessage('Cannot create instance of the abstract class Vrok\ImportExport\Tests\AbstractOrmTestCase, concrete class needed!');
 
         $helper->fromArray($data);
     }

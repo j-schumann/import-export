@@ -34,6 +34,7 @@ class ExportTest extends TestCase
             'reference'     => null,
             'timestamp'     => null,
             'dtoList'       => [],
+            'arrayProp'     => [],
             // notExported is NOT in the array
         ], $data);
     }
@@ -121,6 +122,7 @@ class ExportTest extends TestCase
             'reference'     => null,
             'timestamp'     => null,
             'dtoList'       => [],
+            'arrayProp'     => [],
         ], $data);
     }
 
@@ -201,6 +203,7 @@ class ExportTest extends TestCase
                     '_entityClass'        => TestDTO::class,
                 ],
             ],
+            'arrayProp'     => [],
         ], $data);
     }
 
