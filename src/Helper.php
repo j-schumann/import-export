@@ -73,7 +73,7 @@ class Helper
      *                                 definitions for sub-records by using the
      *                                 property name as key and specifying an
      *                                 array of (sub-) properties as value.
-     * @param bool    $filterAsExclude flips the meaning of the propertyFilter:
+     * @param bool    $isExcludeFilter flips the meaning of the propertyFilter:
      *                                 only properties that are *not* in the
      *                                 list are imported, same for sub-records
      *
@@ -83,7 +83,7 @@ class Helper
         array $data,
         ?string $entityClass = null,
         array $propertyFilter = [],
-        bool $filterAsExclude = false,
+        bool $isExcludeFilter = false,
     ): object {
         // let the defined _entityClass take precedence over the (possibly
         // inferred) $entityClass from a property type, which may be an abstract
@@ -119,8 +119,8 @@ class Helper
         foreach ($this->getImportableProperties($className) as $propName => $propData) {
             // empty array also counts as "no filter applied"
             if ([] !== $propertyFilter && (
-                (!in_array($propName, $propertyFilter, true) && !$filterAsExclude)
-                || (in_array($propName, $propertyFilter, true) && $filterAsExclude)
+                (!in_array($propName, $propertyFilter, true) && !$isExcludeFilter)
+                || (in_array($propName, $propertyFilter, true) && $isExcludeFilter)
             )
             ) {
                 continue;
@@ -148,7 +148,7 @@ class Helper
                         $propData['reflection'],
                         $listOf,
                         $propertyFilter[$propName] ?? [],
-                        $filterAsExclude
+                        $isExcludeFilter
                     )
                     // simply set standard properties, the propertyAccessor will throw
                     // an exception if the types don't match.
@@ -169,7 +169,7 @@ class Helper
                     ? $this->fromArray($data[$propName],
                         null,
                         $propertyFilter[$propName] ?? [],
-                        $filterAsExclude
+                        $isExcludeFilter
                     )
                     : $data[$propName];
             } elseif (!$typeDetails['classname']) {
@@ -192,7 +192,7 @@ class Helper
                         $data[$propName],
                         $typeDetails['classname'],
                         $propertyFilter[$propName] ?? [],
-                        $filterAsExclude
+                        $isExcludeFilter
                     );
                 }
             } elseif (is_a($typeDetails['classname'], Collection::class, true)) {
@@ -311,7 +311,7 @@ class Helper
         \ReflectionProperty $property,
         string $listOf,
         array $propertyFilter = [],
-        bool $filterAsExclude = false,
+        bool $isExcludeFilter = false,
     ): array {
         if (null === $list) {
             return [];
@@ -332,7 +332,7 @@ class Helper
                 throw new \RuntimeException("Property $property->class::$property->name is marked as list of '$listOf' but entry is no array: $json!");
             }
 
-            $list[$key] = $this->fromArray($entry, $listOf, $propertyFilter, $filterAsExclude);
+            $list[$key] = $this->fromArray($entry, $listOf, $propertyFilter, $isExcludeFilter);
         }
 
         return $list;
@@ -353,7 +353,7 @@ class Helper
      *                                definitions for sub-records by using the
      *                                property name as key and specifying an
      *                                array of ignored (sub) properties as value.
-     * @param bool   $filterAsExclude flips the meaning of the propertyFilter:
+     * @param bool   $isExcludeFilter flips the meaning of the propertyFilter:
      *                                only properties that are *not* in the
      *                                list are returned, same for sub-records
      *
@@ -362,7 +362,7 @@ class Helper
     public function toArray(
         object $object,
         array $propertyFilter = [],
-        bool $filterAsExclude = false,
+        bool $isExcludeFilter = false,
     ): array {
         $className = ClassUtils::getClass($object);
         if (!$this->isExportableEntity($className)) {
@@ -374,8 +374,8 @@ class Helper
         foreach ($this->getExportableProperties($className) as $propertyName => $attribute) {
             // empty array also counts as "no filter applied"
             if ([] !== $propertyFilter && (
-                (!in_array($propertyName, $propertyFilter, true) && !$filterAsExclude)
-                || (in_array($propertyName, $propertyFilter, true) && $filterAsExclude)
+                (!in_array($propertyName, $propertyFilter, true) && !$isExcludeFilter)
+                || (in_array($propertyName, $propertyFilter, true) && $isExcludeFilter)
             )
             ) {
                 continue;
@@ -397,7 +397,7 @@ class Helper
                     $data[$propertyName] = $this->exportCollection(
                         $propValue,
                         $propertyFilter[$propertyName] ?? [],
-                        $filterAsExclude
+                        $isExcludeFilter
                     );
                 }
             } elseif (is_object($propValue) && $this->isExportableEntity($propValue::class)) {
@@ -411,7 +411,7 @@ class Helper
                     $data[$propertyName] = $this->toArray(
                         $propValue,
                         $propertyFilter[$propertyName] ?? [],
-                        $filterAsExclude
+                        $isExcludeFilter
                     );
 
                     // We always store the classname, even when only one class
@@ -453,13 +453,13 @@ class Helper
     public function exportCollection(
         Collection|array $collection,
         array $propertyFilter = [],
-        bool $filterAsExclude = false,
+        bool $isExcludeFilter = false,
     ): array {
         // If the propertyFilter contains only one element we assume that this
         // is the identifier that is to be exported, instead of the whole
         // entity.
         $referenceByIdentifier = false;
-        if (!$filterAsExclude && 1 === count($propertyFilter)) {
+        if (!$isExcludeFilter && 1 === count($propertyFilter)) {
             $referenceByIdentifier = array_values($propertyFilter)[0];
         }
 
@@ -483,7 +483,7 @@ class Helper
                 $export = $this->toArray(
                     $element,
                     $propertyFilter,
-                    $filterAsExclude
+                    $isExcludeFilter
                 );
 
                 // we need the entityClass here, as the collection may contain

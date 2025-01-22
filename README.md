@@ -18,11 +18,11 @@ Short Example, for more details see [ExportEntity](tests/Fixtures/ExportEntity.p
 Allows to export referenced entities (or only their identifiers) and collections.
 
 ```php
-use Vrok\DoctrineAddons\ImportExport\ExportableEntity;
-use Vrok\DoctrineAddons\ImportExport\ExportableProperty;
-use Vrok\DoctrineAddons\ImportExport\Helper;
-use Vrok\DoctrineAddons\ImportExport\ImportableEntity;
-use Vrok\DoctrineAddons\ImportExport\ImportableProperty;
+use Vrok\ImportExport\ExportableEntity;
+use Vrok\ImportExport\ExportableProperty;
+use Vrok\ImportExport\Helper;
+use Vrok\ImportExport\ImportableEntity;
+use Vrok\ImportExport\ImportableProperty;
 
 #[ExportableEntity]
 #[ImportableEntity]
@@ -34,20 +34,22 @@ class Entity
 
     #[ExportableProperty]
     #[ImportableProperty]
-    public ?DateTimeImmutable $timestamp = null;
+    public ?\DateTimeImmutable $timestamp = null;
 }
 
 $entity = new Entity();
 $entity->id = 1;
-$entity->timestamp = new DateTimeImmutable();
+$entity->timestamp = new \DateTimeImmutable();
 
 $helper = new Helper();
 $export = $helper->toArray($entity);
 
-// $export === [
-//     'id'        => 1,
-//     'timestamp' => '2022-03-23....',
-// ]
+/*
+  $export === [
+    'id'        => 1,
+    'timestamp' => '2022-03-23....',
+  ]
+*/
 
 $newInstance = $helper->fromArray($export, Entity::class);
 ```
@@ -65,6 +67,10 @@ $newInstance = $helper->fromArray($export, Entity::class);
   a property is a Doctrine `Collection` or an array and marked with `asList`),
   even when they are of different types (e.g. through inheritance). An
   `_entityClass` field will contain the actual class.
+* can limit exported data to only allowed properties by using the 
+  `propertyFilter` argument of `fromArray`
+* can prevent (otherwise exportable property) from being exported by using the
+  `propertyFilter` argument of `fromArray` and setting `isExcludeFilter` to `true`
 
 ### Import
 * can reference existing records: if a property (collection or single object)
@@ -88,7 +94,13 @@ $newInstance = $helper->fromArray($export, Entity::class);
   importable properties) by using the `propertyFilter` argument of `fromArray`
 * exclude fields from importing (even when they are in the dataset and potentially
   importable) by using the `propertyFilter` argument of `fromArray` and setting
-  `filterAsExclude` to `true`
+  `isExcludeFilter` to `true`
+
+## Dependencies
+
+* `doctrine/common` for the `ClassUtils` (proxy handling) and `Collection` properties
+* `doctrine/persistence` for the `ObjectManager` (importing references)
+* `symfony/property-access` for setting/reading (private, protected) properties
 
 ## Future Improvements
 
