@@ -9,12 +9,18 @@ use Vrok\ImportExport\ExportableProperty;
 use Vrok\ImportExport\ImportableEntity;
 use Vrok\ImportExport\ImportableProperty;
 
+#[\DoesNotExist]
 #[ExportableEntity]
 #[ImportableEntity]
+#[RepeatableAttribute]
+#[RepeatableAttribute(value: 1)]
 class TestDTO implements DtoInterface
 {
+    #[\DoesNotExist]
     #[ExportableProperty]
     #[ImportableProperty]
+    #[RepeatableAttribute]
+    #[RepeatableAttribute(value: 1)]
     public string $name = '';
 
     #[ExportableProperty]

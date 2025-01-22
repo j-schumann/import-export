@@ -11,7 +11,6 @@ use Vrok\ImportExport\Tests\Fixtures\ExportEntity;
 use Vrok\ImportExport\Tests\Fixtures\ImportEntity;
 use Vrok\ImportExport\Tests\Fixtures\NestedDTO;
 use Vrok\ImportExport\Tests\Fixtures\TestDTO;
-use Vrok\ImportExport\Tests\Fixtures\TestEntity;
 
 class ImportTest extends AbstractOrmTestCase
 {
@@ -374,7 +373,7 @@ class ImportTest extends AbstractOrmTestCase
                 ],
                 [
                     '_entityClass' => ExportEntity::class,
-                    'name'  => 'element2',
+                    'name'         => 'element2',
                 ],
             ],
         ];
@@ -517,6 +516,133 @@ class ImportTest extends AbstractOrmTestCase
         $this->expectExceptionMessage('Cannot create instance of the interface Vrok\ImportExport\Tests\Fixtures\DtoInterface, concrete class needed!');
 
         $helper->fromArray($data, ImportEntity::class);
+    }
+
+    public function testImportWithIncludeFilter(): void
+    {
+        $helper = new Helper();
+
+        $data = [
+            'name'          => 'test',
+            'timestamp'     => 'tomorrow',
+            'interfaceList' => [
+                [
+                    '_entityClass'        => TestDTO::class,
+                    'name'                => 'element1',
+                    'nestedInterface'     => [
+                        '_entityClass' => NestedDTO::class,
+                        'description'  => 'element a',
+                        'mixedProp'    => 111,
+                    ],
+                    'nestedInterfaceList' => [
+                        [
+                            '_entityClass' => NestedDTO::class,
+                            'description'  => 'element b',
+                            'mixedProp'    => 'string',
+                        ],
+                        [
+                            '_entityClass' => NestedDTO::class,
+                            'description'  => 'element c',
+                        ],
+                        [
+                            '_entityClass' => TestDTO::class,
+                            'name'         => 'element d',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $instance = $helper->fromArray(
+            $data,
+            ImportEntity::class,
+            [
+                'timestamp',
+                'interfaceList',
+                'interfaceList' => [
+                    'nestedInterface', 'nestedInterface' => ['mixedProp'],
+                ],
+            ]
+        );
+
+        self::assertInstanceOf(ImportEntity::class, $instance);
+        self::assertSame('', $instance->getName());
+        self::assertInstanceOf(\DateTimeImmutable::class, $instance->timestamp);
+        self::assertCount(1, $instance->interfaceList);
+
+        $element1 = $instance->interfaceList[0];
+        self::assertInstanceOf(TestDTO::class, $element1);
+        self::assertSame('', $element1->name);
+
+        self::assertInstanceOf(NestedDTO::class, $element1->nestedInterface);
+        self::assertSame('', $element1->nestedInterface->description);
+        self::assertSame(111, $element1->nestedInterface->mixedProp);
+
+        self::assertCount(0, $element1->nestedInterfaceList);
+    }
+
+    public function testImportWithExcludeFilter(): void
+    {
+        $helper = new Helper();
+
+        $data = [
+            'name'          => 'test',
+            'timestamp'     => 'tomorrow',
+            'interfaceList' => [
+                [
+                    '_entityClass'        => TestDTO::class,
+                    'name'                => 'element1',
+                    'nestedInterface'     => [
+                        '_entityClass' => NestedDTO::class,
+                        'description'  => 'element a',
+                        'mixedProp'    => 111,
+                    ],
+                    'nestedInterfaceList' => [
+                        [
+                            '_entityClass' => NestedDTO::class,
+                            'description'  => 'element b',
+                            'mixedProp'    => 'string',
+                        ],
+                        [
+                            '_entityClass' => NestedDTO::class,
+                            'description'  => 'element c',
+                        ],
+                        [
+                            '_entityClass' => TestDTO::class,
+                            'name'         => 'element d',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $instance = $helper->fromArray(
+            $data,
+            ImportEntity::class,
+            [
+                'name',
+                'interfaceList' => [
+                    'name',
+                    'nestedInterface' => ['description'],
+                ],
+            ],
+            true
+        );
+
+        self::assertInstanceOf(ImportEntity::class, $instance);
+        self::assertSame('', $instance->getName());
+        self::assertInstanceOf(\DateTimeImmutable::class, $instance->timestamp);
+        self::assertCount(1, $instance->interfaceList);
+
+        $element1 = $instance->interfaceList[0];
+        self::assertInstanceOf(TestDTO::class, $element1);
+        self::assertSame('', $element1->name);
+
+        self::assertInstanceOf(NestedDTO::class, $element1->nestedInterface);
+        self::assertSame('', $element1->nestedInterface->description);
+        self::assertSame(111, $element1->nestedInterface->mixedProp);
+
+        self::assertCount(3, $element1->nestedInterfaceList);
     }
 
     public function testThrowsExceptionWithoutClassname(): void
