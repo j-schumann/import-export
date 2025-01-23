@@ -9,10 +9,8 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Mapping as ORM;
 use PHPUnit\Framework\TestCase;
-use Vrok\ImportExport\ImportableEntity;
 use Vrok\ImportExport\ImportableProperty;
 
-#[ImportableEntity]
 #[ORM\Entity]
 class ImportEntity
 {
@@ -92,7 +90,7 @@ class ImportEntity
 
     // region typed (object), nullable property w/o getter/setter
     #[ImportableProperty]
-    public ?TestEntity $otherReference = null;
+    public ?ExportEntity $otherReference = null;
     // endregion
 
     // region property without Importable attribute

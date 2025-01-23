@@ -5,9 +5,11 @@ Doctrine Helper to import from / export to JSON object graphs
 [![Coverage Status](https://coveralls.io/repos/github/j-schumann/import-export/badge.svg?branch=main)](https://coveralls.io/github/j-schumann/import-export?branch=main)
 
 Uses Symfony's `PropertyAccess` to convert objects to arrays or generate objects
-from arrays. Which classes & properties can be exported/imported and how can be
-controlled with the `ExportableEntity`, `ImportableEntity` and `ExportableProperty`,
-`ImportableProperty` PHP attributes.  
+from arrays. Which classes & properties can be exported/imported (and how) can
+be controlled with the `ExportableProperty` and `ImportableProperty` PHP 
+attributes: Only classes that have at least one `ExportableProperty` can be
+converted to array, only classes that have at least one `ImportableProperty` can
+be instantiated from array.
 Uses Doctrines `ClassUtils` to safely handle proxies.
 
 ## Usage
@@ -18,14 +20,10 @@ Short Example, for more details see [ExportEntity](tests/Fixtures/ExportEntity.p
 Allows to export referenced entities (or only their identifiers) and collections.
 
 ```php
-use Vrok\ImportExport\ExportableEntity;
 use Vrok\ImportExport\ExportableProperty;
 use Vrok\ImportExport\Helper;
-use Vrok\ImportExport\ImportableEntity;
 use Vrok\ImportExport\ImportableProperty;
 
-#[ExportableEntity]
-#[ImportableEntity]
 class Entity
 {
     #[ExportableProperty]
@@ -74,7 +72,7 @@ $newInstance = $helper->fromArray($export, Entity::class);
 
 ### Import
 * can reference existing records: if a property (collection or single object)
-  points to an `ImportableEntity` and the dataset contains an `int`/`string`
+  points to an "importable entity" and the dataset contains an `int`/`string`
   the given `ObjectManager` is used to fetch the specified record from the
   database
 * handle object graphs:
@@ -104,6 +102,14 @@ $newInstance = $helper->fromArray($export, Entity::class);
 
 ## Future Improvements
 
+* what could be done with Symfony's serializer?
+  * can already transform object (graphs) to array
+  * properties can be marked with groups to be exportable
+  * how to mark properties to only be exported as identifier? new attribute? 
+    how implement that, how is APIP doing this?
+  * how to mark array properties to be treated as DTO-List?
+  * how to ignore some properties without the need to hardcode groups? (exclude-filter)
+  * how to limit to some properties without the need to hardcode groups? (include-filter)
 * evaluate Doctrine's ORM collection attributes to check for allowed element class
 * Improve union type handling (e.g. multiple base types: int|string)
 * not only export to arrays but also directly to files

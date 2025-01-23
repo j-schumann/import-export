@@ -13,8 +13,7 @@ use Symfony\Component\PropertyAccess\PropertyAccessorInterface;
 /**
  * Helper to convert arrays to (Doctrine) entities and export entities as arrays.
  * Uses Reflection to determine property types and check for properties tagged
- * with #[ImportableProperty] or #[ExportableProperty] and entity classes tagged
- * with #[ImportableEntity].
+ * with #[ImportableProperty] or #[ExportableProperty].
  * Uses Symfony's PropertyAccess to get/set properties using the correct
  * getters/setters (which also supports hassers and issers).
  * Uses Doctrine's ClassUtils to handle proxies, as we need the correct class
@@ -26,8 +25,6 @@ class Helper
     // static caches to reduce Reflection calls when im-/exporting multiple
     // objects of the same class
     protected static array $typeDetails = [];
-    protected static array $exportableEntities = [];
-    protected static array $importableEntities = [];
     protected static array $exportableProperties = [];
     protected static array $importableProperties = [];
 
@@ -45,7 +42,7 @@ class Helper
     /**
      * Required when importing data that uses references to existing records
      * by giving an identifier (int|string) instead of an array or object for
-     * a property that holds a (list of) ExportableEntity.
+     * a property that holds a (list of) importable object(s).
      */
     public function setObjectManager(ObjectManager $objectManager): void
     {
@@ -61,8 +58,8 @@ class Helper
      * of entities.
      * Also instantiates Datetime[Immutable] properties from strings.
      * To determine, which properties to populate the attribute
-     * #[ImportableProperty] is used. Can infer the entityClass from the
-     * property's type for classes that are tagged with #[ImportableEntity].
+     * #[ImportableProperty] is used. Can infer the class of nested records from
+     * the property's type.
      *
      * @param array   $data            The list of all fields to set on the new
      *                                 object
@@ -177,7 +174,9 @@ class Helper
                 // is a union type with no classes (e.g. int|string) -> let the
                 // propertyAccessor try to set the value as is.
                 $value = $data[$propName];
-            } elseif ($this->isImportableEntity($typeDetails['classname'])) {
+            } elseif ($this->isImportableClass($typeDetails['classname'])
+                || isset($data[$propName]['_entityClass'])
+            ) {
                 if (is_int($data[$propName]) || is_string($data[$propName])) {
                     if (null === $this->objectManager) {
                         throw new \RuntimeException("Found ID for $className::$propName, but objectManager is not set to find object!");
@@ -317,10 +316,6 @@ class Helper
             return [];
         }
 
-        if (!$this->isImportableEntity($listOf)) {
-            throw new \LogicException("Property $property->class::$property->name is marked with ImportableProperty but its given listOf '$listOf' is no ImportableEntity!");
-        }
-
         if (!is_array($list)) {
             $json = json_encode($list, JSON_THROW_ON_ERROR);
             throw new \RuntimeException("Property $property->class::$property->name is marked as list of '$listOf' but it is no array: $json!");
@@ -341,13 +336,13 @@ class Helper
     /**
      * Converts the given object to an array, converting referenced entities
      * and collections to arrays too. Datetime instances are returned as ATOM
-     * strings. Only works with objects that are marked with #[ExportableEntity].
+     * strings.
      * Exports only properties that are marked with #[ExportableProperty]. If a
      * reference uses the referenceByIdentifier argument in the attribute, only
      * the value of the field named in that argument is returned.
      *
-     * @param object $object          the object to export, must be tagged with
-     *                                #[ExportableEntity]
+     * @param object $object          the object to export, must have at least
+     *                                one ExportableProperty
      * @param array  $propertyFilter  Only properties with the given names are
      *                                returned, ignored if empty. May contain
      *                                definitions for sub-records by using the
@@ -365,13 +360,14 @@ class Helper
         bool $isExcludeFilter = false,
     ): array {
         $className = ClassUtils::getClass($object);
-        if (!$this->isExportableEntity($className)) {
-            throw new \RuntimeException("Don't know how to export instance of $className!");
+        $properties = $this->getExportableProperties($className);
+        if ([] === $properties) {
+            throw new \RuntimeException("Don't know how to export instance of $className, it has no exportable properties!");
         }
 
         $data = [];
-        /* @var \ReflectionProperty $property */
-        foreach ($this->getExportableProperties($className) as $propertyName => $attribute) {
+        /* @var ExportableProperty $attribute */
+        foreach ($properties as $propertyName => $attribute) {
             // empty array also counts as "no filter applied"
             if ([] !== $propertyFilter && (
                 (!in_array($propertyName, $propertyFilter, true) && !$isExcludeFilter)
@@ -400,7 +396,7 @@ class Helper
                         $isExcludeFilter
                     );
                 }
-            } elseif (is_object($propValue) && $this->isExportableEntity($propValue::class)) {
+            } elseif (is_object($propValue) && $this->isExportableClass($propValue::class)) {
                 if ('' !== $attribute->referenceByIdentifier) {
                     $identifier = $this->toArray(
                         $propValue,
@@ -433,7 +429,7 @@ class Helper
             ) {
                 $data[$propertyName] = $propValue;
             } else {
-                throw new \RuntimeException("Don't know how to export $className::$propertyName!");
+                throw new \RuntimeException("Don't know how to export $className::$propertyName, it is an object without exportable properties!");
             }
         }
 
@@ -574,34 +570,16 @@ class Helper
     /**
      * @throws \ReflectionException
      */
-    protected function isImportableEntity(string $className): bool
+    protected function isImportableClass(string $className): bool
     {
-        if (!isset(self::$importableEntities[$className])) {
-            $attrib = ReflectionHelper::getClassAttribute(
-                $className,
-                ImportableEntity::class
-            );
-
-            self::$importableEntities[$className] = $attrib instanceof ImportableEntity;
-        }
-
-        return self::$importableEntities[$className];
+        return [] !== $this->getImportableProperties($className);
     }
 
     /**
      * @throws \ReflectionException
      */
-    protected function isExportableEntity(string $className): bool
+    protected function isExportableClass(string $className): bool
     {
-        if (!isset(self::$exportableEntities[$className])) {
-            $attrib = ReflectionHelper::getClassAttribute(
-                $className,
-                ExportableEntity::class
-            );
-
-            self::$exportableEntities[$className] = $attrib instanceof ExportableEntity;
-        }
-
-        return self::$exportableEntities[$className];
+        return [] !== $this->getExportableProperties($className);
     }
 }
