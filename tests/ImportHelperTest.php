@@ -1038,6 +1038,8 @@ class ImportHelperTest extends AbstractOrmTestCase
             AutoincrementEntity::class,
         ]);
 
+        self::assertSame([], $helper->getIdentityMap());
+
         $data = [
             [
                 'id'   => 99999,
@@ -1061,6 +1063,15 @@ class ImportHelperTest extends AbstractOrmTestCase
         self::assertNotSame(77777, $collection[1]->id);
         self::assertInstanceOf(AutoincrementEntity::class, $collection[1]->parent);
         self::assertSame('e1', $collection[1]->parent->name);
+
+        self::assertSame(
+            [
+                AutoincrementEntity::class => [
+                    99999 => 1,
+                    77777 => 2,
+                ],
+            ],
+            $helper->getIdentityMap());
     }
 
     public function testImportThrowsWithNonMappedIdentity(): void
