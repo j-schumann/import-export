@@ -34,7 +34,7 @@ class ImportEntity
     // endregion
 
     // region untyped Collection property
-    #[ImportableProperty]
+    #[ImportableProperty(listOf: self::class)]
     private Collection $collection;
 
     public function getCollection(): Collection

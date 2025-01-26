@@ -7,23 +7,23 @@ declare(strict_types=1);
 namespace Vrok\ImportExport\Tests;
 
 use PHPUnit\Framework\TestCase;
-use Vrok\ImportExport\Helper;
+use Vrok\ImportExport\ExportHelper;
 use Vrok\ImportExport\Tests\Fixtures\ExportEntity;
 use Vrok\ImportExport\Tests\Fixtures\ImportEntity;
 use Vrok\ImportExport\Tests\Fixtures\NestedDTO;
 use Vrok\ImportExport\Tests\Fixtures\TestDTO;
 
-class ExportTest extends TestCase
+class ExportHelperTest extends TestCase
 {
     public function testExportWithGetter(): void
     {
-        $helper = new Helper();
+        $helper = new ExportHelper();
 
         $entity = new ExportEntity();
         $entity->id = 1;
         $entity->setName('test');
 
-        $data = $helper->toArray($entity);
+        $data = $helper->objectToArray($entity);
 
         self::assertSame([
             'id'            => 1,
@@ -41,13 +41,13 @@ class ExportTest extends TestCase
 
     public function testExportWithIncludeFilter(): void
     {
-        $helper = new Helper();
+        $helper = new ExportHelper();
 
         $entity = new ExportEntity();
         $entity->id = 1;
         $entity->setName('test');
 
-        $data = $helper->toArray($entity, ['name', 'parent']);
+        $data = $helper->objectToArray($entity, ['name', 'parent']);
 
         self::assertSame([
             'name'   => 'test via getter',
@@ -57,13 +57,13 @@ class ExportTest extends TestCase
 
     public function testExportWithExcludeFilter(): void
     {
-        $helper = new Helper();
+        $helper = new ExportHelper();
 
         $entity = new ExportEntity();
         $entity->id = 1;
         $entity->setName('test');
 
-        $data = $helper->toArray(
+        $data = $helper->objectToArray(
             $entity,
             ['id', 'collection', 'refCollection'],
             true
@@ -81,19 +81,19 @@ class ExportTest extends TestCase
 
     public function testExportDatetime(): void
     {
-        $helper = new Helper();
+        $helper = new ExportHelper();
 
         $now = new \DateTimeImmutable();
         $entity = new ExportEntity();
         $entity->timestamp = $now;
 
-        $data = $helper->toArray($entity);
+        $data = $helper->objectToArray($entity);
         self::assertSame($now->format(DATE_ATOM), $data['timestamp']);
     }
 
-    public function testExportWithCollections(): void
+    public function testExportWithNestedCollections(): void
     {
-        $helper = new Helper();
+        $helper = new ExportHelper();
 
         $element1 = new ExportEntity();
         $element1->id = 1;
@@ -113,7 +113,7 @@ class ExportTest extends TestCase
         $entity->setCollection([$element1, $element2]);
         $entity->setRefCollection([$refElement1, $refElement2]);
 
-        $data = $helper->toArray($entity);
+        $data = $helper->objectToArray($entity);
         self::assertSame([
             'id'            => 0,
             'name'          => ' via getter',
@@ -152,9 +152,9 @@ class ExportTest extends TestCase
         ], $data);
     }
 
-    public function testExportReferences(): void
+    public function testExportNestedRecordAsReference(): void
     {
-        $helper = new Helper();
+        $helper = new ExportHelper();
 
         $parent = new ExportEntity();
         $parent->id = 1;
@@ -169,7 +169,7 @@ class ExportTest extends TestCase
         $entity->setParent($parent);
         $entity->setReference($reference);
 
-        $data = $helper->toArray($entity);
+        $data = $helper->objectToArray($entity);
         self::assertSame([
             'id'            => 3,
             'name'          => ' via getter',
@@ -196,7 +196,7 @@ class ExportTest extends TestCase
 
     public function testExportDtoList(): void
     {
-        $helper = new Helper();
+        $helper = new ExportHelper();
 
         $entity = new ExportEntity();
         $entity->id = 3;
@@ -209,7 +209,7 @@ class ExportTest extends TestCase
         $dto2->name = 'element 2';
         $entity->dtoList[] = $dto2;
 
-        $data = $helper->toArray($entity);
+        $data = $helper->objectToArray($entity);
         self::assertSame([
             'id'            => 3,
             'name'          => ' via getter',
@@ -238,7 +238,7 @@ class ExportTest extends TestCase
 
     public function testExportMixedList(): void
     {
-        $helper = new Helper();
+        $helper = new ExportHelper();
 
         $entity = new ExportEntity();
         $entity->id = 3;
@@ -249,7 +249,7 @@ class ExportTest extends TestCase
 
         $entity->dtoList[] = 'string';
 
-        $data = $helper->toArray($entity);
+        $data = $helper->objectToArray($entity);
         self::assertSame(3, $data['id']);
         self::assertCount(2, $data['dtoList']);
         self::assertSame([
@@ -264,7 +264,7 @@ class ExportTest extends TestCase
 
     public function testExportNestedDtos(): void
     {
-        $helper = new Helper();
+        $helper = new ExportHelper();
 
         $entity = new ExportEntity();
         $entity->id = 3;
@@ -292,7 +292,7 @@ class ExportTest extends TestCase
 
         $entity->dtoList[] = $baseDto;
 
-        $data = $helper->toArray($entity);
+        $data = $helper->objectToArray($entity);
         self::assertSame(3, $data['id']);
         self::assertCount(1, $data['dtoList']);
         self::assertSame([
@@ -326,7 +326,7 @@ class ExportTest extends TestCase
 
     public function testExportWithNestedIncludeFilter(): void
     {
-        $helper = new Helper();
+        $helper = new ExportHelper();
 
         $entity = new ExportEntity();
         $entity->id = 3;
@@ -354,7 +354,7 @@ class ExportTest extends TestCase
 
         $entity->dtoList[] = $baseDto;
 
-        $data = $helper->toArray(
+        $data = $helper->objectToArray(
             $entity,
             ['id', 'dtoList', 'dtoList' => ['name', 'nestedInterface']],
         );
@@ -367,9 +367,9 @@ class ExportTest extends TestCase
                     'nestedInterface' => [
                         'description'  => 'element a',
                         'mixedProp'    => 0,
-                        '_entityClass' => 'Vrok\ImportExport\Tests\Fixtures\NestedDTO',
+                        '_entityClass' => NestedDTO::class,
                     ],
-                    '_entityClass'    => 'Vrok\ImportExport\Tests\Fixtures\TestDTO',
+                    '_entityClass'    => TestDTO::class,
                 ],
             ],
         ], $data);
@@ -377,7 +377,7 @@ class ExportTest extends TestCase
 
     public function testExportWithNestedExcludeFilter(): void
     {
-        $helper = new Helper();
+        $helper = new ExportHelper();
 
         $entity = new ExportEntity();
         $entity->id = 3;
@@ -405,7 +405,7 @@ class ExportTest extends TestCase
 
         $entity->dtoList[] = $baseDto;
 
-        $data = $helper->toArray(
+        $data = $helper->objectToArray(
             $entity,
             ['id', 'collection', 'refCollection', 'dtoList' => ['nestedInterface', 'nestedInterfaceList']],
             true
@@ -419,7 +419,7 @@ class ExportTest extends TestCase
             'dtoList'   => [
                 [
                     'name'         => 'element 1',
-                    '_entityClass' => 'Vrok\ImportExport\Tests\Fixtures\TestDTO',
+                    '_entityClass' => TestDTO::class,
                 ],
             ],
             'arrayProp' => [],
@@ -428,16 +428,16 @@ class ExportTest extends TestCase
 
     public function testThrowsExceptionWithNonExportableEntity(): void
     {
-        $helper = new Helper();
+        $helper = new ExportHelper();
         $entity = new ImportEntity();
 
         $this->expectException(\RuntimeException::class);
-        $helper->toArray($entity);
+        $helper->objectToArray($entity);
     }
 
-    public function testExportCollection(): void
+    public function testCollectionToArray(): void
     {
-        $helper = new Helper();
+        $helper = new ExportHelper();
 
         $element1 = new ExportEntity();
         $element1->id = 1;
@@ -446,7 +446,7 @@ class ExportTest extends TestCase
         $element2->id = 2;
         $element2->setName('element2');
 
-        $data = $helper->exportCollection([$element1, $element2]);
+        $data = $helper->collectionToArray([$element1, $element2]);
 
         self::assertSame([
             [
@@ -476,9 +476,9 @@ class ExportTest extends TestCase
         ], $data);
     }
 
-    public function testExportCollectionWithIncludeFilter(): void
+    public function testCollectionToArrayWithIncludeFilter(): void
     {
-        $helper = new Helper();
+        $helper = new ExportHelper();
 
         $element1 = new ExportEntity();
         $element1->id = 1;
@@ -487,7 +487,7 @@ class ExportTest extends TestCase
         $element2->id = 2;
         $element2->setName('element2');
 
-        $data = $helper->exportCollection([$element1, $element2], ['id', 'name']);
+        $data = $helper->collectionToArray([$element1, $element2], ['id', 'name']);
 
         self::assertSame([
             [
@@ -503,9 +503,9 @@ class ExportTest extends TestCase
         ], $data);
     }
 
-    public function testExportCollectionWithExcludeFilter(): void
+    public function testCollectionToArrayWithExcludeFilter(): void
     {
-        $helper = new Helper();
+        $helper = new ExportHelper();
 
         $element1 = new ExportEntity();
         $element1->id = 1;
@@ -514,7 +514,7 @@ class ExportTest extends TestCase
         $element2->id = 2;
         $element2->setName('element2');
 
-        $data = $helper->exportCollection(
+        $data = $helper->collectionToArray(
             [$element1, $element2],
             ['id', 'collection', 'refCollection'],
             true
@@ -542,9 +542,9 @@ class ExportTest extends TestCase
         ], $data);
     }
 
-    public function testExportCollectionWithSingleField(): void
+    public function testCollectionToArrayWithSingleField(): void
     {
-        $helper = new Helper();
+        $helper = new ExportHelper();
 
         $element1 = new ExportEntity();
         $element1->id = 1;
@@ -553,7 +553,7 @@ class ExportTest extends TestCase
         $element2->id = 2;
         $element2->setName('element2');
 
-        $data = $helper->exportCollection([$element1, $element2], ['id']);
+        $data = $helper->collectionToArray([$element1, $element2], ['id']);
 
         self::assertSame([1, 2], $data);
     }

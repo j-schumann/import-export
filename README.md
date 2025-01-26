@@ -15,14 +15,15 @@ Uses Doctrines `ClassUtils` to safely handle proxies.
 ## Usage
 
 Short Example, for more details see [ExportEntity](tests/Fixtures/ExportEntity.php)
-/ [ImportEntity](tests/Fixtures/ImportEntity.php) and [ExportTest](tests/ExportTest.php)
-/ [ImportTest](tests/ImportTest.php) for all features.
+/ [ImportEntity](tests/Fixtures/ImportEntity.php) and [ExportHelperTest](tests/ExportHelperTest.php)
+/ [ImportHelperTest](tests/ImportHelperTest.php) for all features.
 Allows to export referenced entities (or only their identifiers) and collections.
 
 ```php
 use Vrok\ImportExport\ExportableProperty;
-use Vrok\ImportExport\Helper;
+use Vrok\ImportExport\ExportHelper;
 use Vrok\ImportExport\ImportableProperty;
+use Vrok\ImportExport\ImportHelper;
 
 class Entity
 {
@@ -39,8 +40,9 @@ $entity = new Entity();
 $entity->id = 1;
 $entity->timestamp = new \DateTimeImmutable();
 
-$helper = new Helper();
-$export = $helper->toArray($entity);
+$helper = new ExportHelper();
+$export = $helper->objectToArray($entity);
+$exportList = $helper->collectionToArray([$entity]);
 
 /*
   $export === [
@@ -49,7 +51,9 @@ $export = $helper->toArray($entity);
   ]
 */
 
-$newInstance = $helper->fromArray($export, Entity::class);
+$helper = new ImportHelper();
+$newInstance = $helper->objectFromArray($export, Entity::class);
+$newInstances = $helper->collectionFromArray([$export], Entity::class);
 ```
 
 ## Features
@@ -61,7 +65,7 @@ $newInstance = $helper->fromArray($export, Entity::class);
   the `referenceByIdentifier` argument of the `ExportableProperty` attribute,
   e.g. instead of exporting the whole `User`, only it's ID could be exported for
   the `createdBy` property of another record.
-* can export collections of objects (either by using `exportCollection` or when
+* can export collections of objects (either by using `collectionToArray` or when
   a property is a Doctrine `Collection` or an array and marked with `asList`),
   even when they are of different types (e.g. through inheritance). An
   `_entityClass` field will contain the actual class.
@@ -93,6 +97,7 @@ $newInstance = $helper->fromArray($export, Entity::class);
 * exclude fields from importing (even when they are in the dataset and potentially
   importable) by using the `propertyFilter` argument of `fromArray` and setting
   `isExcludeFilter` to `true`
+* automatically persist generated 
 
 ## Dependencies
 

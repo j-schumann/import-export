@@ -12,6 +12,7 @@ use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\ORMSetup;
 use Doctrine\ORM\Tools\SchemaTool;
 use PHPUnit\Framework\TestCase;
+use Vrok\ImportExport\Tests\Fixtures\AutoincrementEntity;
 use Vrok\ImportExport\Tests\Fixtures\ExportEntity;
 use Vrok\ImportExport\Tests\Fixtures\ImportEntity;
 
@@ -55,8 +56,9 @@ abstract class AbstractOrmTestCase extends TestCase
 
         $tool = new SchemaTool($this->em);
         $classes = [
-            $this->em->getClassMetadata(ImportEntity::class),
+            $this->em->getClassMetadata(AutoincrementEntity::class),
             $this->em->getClassMetadata(ExportEntity::class),
+            $this->em->getClassMetadata(ImportEntity::class),
         ];
         $tool->dropSchema($classes);
         $tool->createSchema($classes);

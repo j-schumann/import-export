@@ -8,6 +8,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Vrok\ImportExport\ExportableProperty;
+use Vrok\ImportExport\ImportableProperty;
 
 #[ORM\Entity]
 class ExportEntity
@@ -38,6 +39,7 @@ class ExportEntity
 
     // region Collection property
     #[ExportableProperty]
+    #[ImportableProperty]
     private readonly Collection $collection;
 
     public function getCollection(): Collection

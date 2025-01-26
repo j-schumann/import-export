@@ -6,17 +6,19 @@ declare(strict_types=1);
 
 namespace Vrok\ImportExport\Tests;
 
-use Vrok\ImportExport\Helper;
+use Vrok\ImportExport\ImportHelper;
+use Vrok\ImportExport\Tests\Fixtures\AutoincrementEntity;
 use Vrok\ImportExport\Tests\Fixtures\ExportEntity;
 use Vrok\ImportExport\Tests\Fixtures\ImportEntity;
 use Vrok\ImportExport\Tests\Fixtures\NestedDTO;
 use Vrok\ImportExport\Tests\Fixtures\TestDTO;
 
-class ImportTest extends AbstractOrmTestCase
+class ImportHelperTest extends AbstractOrmTestCase
 {
+    // region objectFromArray
     public function testImportWithSetter(): void
     {
-        $helper = new Helper();
+        $helper = new ImportHelper();
 
         $data = [
             'name'      => 'test',
@@ -25,7 +27,7 @@ class ImportTest extends AbstractOrmTestCase
             'something' => 'else',
         ];
 
-        $instance = $helper->fromArray($data, ImportEntity::class);
+        $instance = $helper->objectFromArray($data, ImportEntity::class);
 
         self::assertInstanceOf(ImportEntity::class, $instance);
         self::assertSame('test via setter', $instance->getName());
@@ -37,13 +39,13 @@ class ImportTest extends AbstractOrmTestCase
 
     public function testImportOfDatetime(): void
     {
-        $helper = new Helper();
+        $helper = new ImportHelper();
 
         $data = [
             'timestamp' => 'tomorrow',
         ];
 
-        $instance = $helper->fromArray($data, ImportEntity::class);
+        $instance = $helper->objectFromArray($data, ImportEntity::class);
 
         self::assertInstanceOf(ImportEntity::class, $instance);
         self::assertInstanceOf(\DateTimeImmutable::class, $instance->timestamp);
@@ -54,7 +56,7 @@ class ImportTest extends AbstractOrmTestCase
 
     public function testImportOfNull(): void
     {
-        $helper = new Helper();
+        $helper = new ImportHelper();
 
         $data = [
             'name'      => null,
@@ -62,7 +64,7 @@ class ImportTest extends AbstractOrmTestCase
             'timestamp' => null,
         ];
 
-        $instance = $helper->fromArray($data, ImportEntity::class);
+        $instance = $helper->objectFromArray($data, ImportEntity::class);
         self::assertInstanceOf(ImportEntity::class, $instance);
         self::assertNull($instance->getParent());
         self::assertNull($instance->getName());
@@ -71,14 +73,14 @@ class ImportTest extends AbstractOrmTestCase
 
     public function testImportIgnoresUnannotatedProperties(): void
     {
-        $helper = new Helper();
+        $helper = new ImportHelper();
 
         $data = [
             'name'        => 'test',
             'notImported' => 'fail!',
         ];
 
-        $instance = $helper->fromArray($data, ImportEntity::class);
+        $instance = $helper->objectFromArray($data, ImportEntity::class);
 
         self::assertInstanceOf(ImportEntity::class, $instance);
         self::assertSame('test via setter', $instance->getName());
@@ -87,24 +89,24 @@ class ImportTest extends AbstractOrmTestCase
 
     public function testImportUntypedProperty(): void
     {
-        $helper = new Helper();
+        $helper = new ImportHelper();
 
         $data = [
             'untypedProp' => 77,
         ];
-        $instance = $helper->fromArray($data, ImportEntity::class);
+        $instance = $helper->objectFromArray($data, ImportEntity::class);
         self::assertSame(77, $instance->untypedProp);
 
         $data = [
             'untypedProp' => '66',
         ];
-        $instance = $helper->fromArray($data, ImportEntity::class);
+        $instance = $helper->objectFromArray($data, ImportEntity::class);
         self::assertSame('66', $instance->untypedProp);
 
         $data = [
             'untypedProp' => [1, 2, 3],
         ];
-        $instance = $helper->fromArray($data, ImportEntity::class);
+        $instance = $helper->objectFromArray($data, ImportEntity::class);
         self::assertSame([1, 2, 3], $instance->untypedProp);
 
         $data = [
@@ -113,7 +115,7 @@ class ImportTest extends AbstractOrmTestCase
                 'name'         => 'Number 4',
             ],
         ];
-        $instance = $helper->fromArray($data, ImportEntity::class);
+        $instance = $helper->objectFromArray($data, ImportEntity::class);
         self::assertInstanceOf(TestDTO::class, $instance->untypedProp);
         self::assertSame('Number 4', $instance->untypedProp->name);
 
@@ -122,20 +124,20 @@ class ImportTest extends AbstractOrmTestCase
         $data = [
             'untypedProp' => $dto,
         ];
-        $instance = $helper->fromArray($data, ImportEntity::class);
+        $instance = $helper->objectFromArray($data, ImportEntity::class);
         self::assertInstanceOf(TestDTO::class, $instance->untypedProp);
         self::assertSame('Number 5', $instance->untypedProp->name);
 
         $data = [
             'untypedProp' => null,
         ];
-        $instance = $helper->fromArray($data, ImportEntity::class);
+        $instance = $helper->objectFromArray($data, ImportEntity::class);
         self::assertNull($instance->untypedProp);
     }
 
-    public function testImportOfReference(): void
+    public function testImportOfNestedRecordAsArray(): void
     {
-        $helper = new Helper();
+        $helper = new ImportHelper();
 
         $data = [
             'parent' => [
@@ -143,16 +145,16 @@ class ImportTest extends AbstractOrmTestCase
             ],
         ];
 
-        $instance = $helper->fromArray($data, ImportEntity::class);
+        $instance = $helper->objectFromArray($data, ImportEntity::class);
 
         self::assertInstanceOf(ImportEntity::class, $instance);
         self::assertInstanceOf(ImportEntity::class, $instance->getParent());
         self::assertSame('parentEntity via setter', $instance->getParent()->getName());
     }
 
-    public function testImportOfReferenceInstance(): void
+    public function testImportOfNestedRecordAsInstance(): void
     {
-        $helper = new Helper();
+        $helper = new ImportHelper();
 
         $parent = new ImportEntity();
         $parent->setName('parent');
@@ -161,7 +163,7 @@ class ImportTest extends AbstractOrmTestCase
             'parent' => $parent,
         ];
 
-        $instance = $helper->fromArray($data, ImportEntity::class);
+        $instance = $helper->objectFromArray($data, ImportEntity::class);
 
         self::assertInstanceOf(ImportEntity::class, $instance);
         self::assertInstanceOf(ImportEntity::class, $instance->getParent());
@@ -172,13 +174,14 @@ class ImportTest extends AbstractOrmTestCase
         self::assertNull($instance->timestamp);
     }
 
-    public function testReferencingExistingRecord(): void
+    public function testImportOfNestedRecordAsReference(): void
     {
         $em = $this->buildEntityManager();
         $this->setupSchema();
 
         $parent = new ImportEntity();
         $parent->setName('parent');
+        $parent->timestamp = new \DateTimeImmutable('yesterday');
         $em->persist($parent);
         $em->flush();
         $em->clear();
@@ -187,22 +190,26 @@ class ImportTest extends AbstractOrmTestCase
             'parent' => $parent->getName(),
         ];
 
-        $helper = new Helper();
+        $helper = new ImportHelper();
         $helper->setObjectManager($em);
-        $instance = $helper->fromArray($data, ImportEntity::class);
+        $instance = $helper->objectFromArray($data, ImportEntity::class);
 
         self::assertInstanceOf(ImportEntity::class, $instance);
         self::assertInstanceOf(ImportEntity::class, $instance->getParent());
         self::assertSame('parent via setter', $instance->getParent()->getName());
+        self::assertSame(
+            $parent->timestamp->format(DATE_ATOM),
+            $instance->getParent()->timestamp->format(DATE_ATOM)
+        );
 
         self::assertSame('', $instance->getName());
         self::assertCount(0, $instance->getCollection());
         self::assertNull($instance->timestamp);
     }
 
-    public function testImportOfCollection(): void
+    public function testImportOfNestedCollection(): void
     {
-        $helper = new Helper();
+        $helper = new ImportHelper();
 
         $data = [
             'collection' => [
@@ -217,7 +224,7 @@ class ImportTest extends AbstractOrmTestCase
             ],
         ];
 
-        $instance = $helper->fromArray($data, ImportEntity::class);
+        $instance = $helper->objectFromArray($data, ImportEntity::class);
 
         self::assertInstanceOf(ImportEntity::class, $instance);
         self::assertCount(2, $instance->getCollection());
@@ -235,9 +242,9 @@ class ImportTest extends AbstractOrmTestCase
         self::assertNull($instance->timestamp);
     }
 
-    public function testImportOfCollectionWithInstances(): void
+    public function testImportOfNestedCollectionWithInstances(): void
     {
-        $helper = new Helper();
+        $helper = new ImportHelper();
 
         $element1 = new ImportEntity();
         $element1->setName('element1');
@@ -249,7 +256,7 @@ class ImportTest extends AbstractOrmTestCase
             'collection' => [$element1, $element2],
         ];
 
-        $instance = $helper->fromArray($data, ImportEntity::class);
+        $instance = $helper->objectFromArray($data, ImportEntity::class);
 
         self::assertInstanceOf(ImportEntity::class, $instance);
         self::assertCount(2, $instance->getCollection());
@@ -267,9 +274,63 @@ class ImportTest extends AbstractOrmTestCase
         self::assertNull($instance->timestamp);
     }
 
+    public function testImportOfNestedCollectionWithReferences(): void
+    {
+        $em = $this->buildEntityManager();
+        $this->setupSchema();
+
+        $helper = new ImportHelper();
+        $helper->setObjectManager($em);
+
+        $element1 = new ImportEntity();
+        $element1->setName('element1');
+        $element1->timestamp = new \DateTimeImmutable('yesterday');
+        $em->persist($element1);
+
+        $element2 = new ImportEntity();
+        $element2->setName('element2');
+        $element2->timestamp = new \DateTimeImmutable('tomorrow');
+        $em->persist($element2);
+
+        $em->flush();
+        $em->clear();
+
+        $data = [
+            'collection' => [
+                $element1->getName(),
+                $element2->getName(),
+            ],
+        ];
+
+        $instance = $helper->objectFromArray($data, ImportEntity::class);
+
+        self::assertInstanceOf(ImportEntity::class, $instance);
+        self::assertCount(2, $instance->getCollection());
+
+        $collectionElement1 = $instance->getCollection()[0];
+        self::assertInstanceOf(ImportEntity::class, $collectionElement1);
+        self::assertSame('element1 via setter', $collectionElement1->getName());
+        self::assertSame(
+            $element1->timestamp->format(DATE_ATOM),
+            $collectionElement1->timestamp->format(DATE_ATOM)
+        );
+
+        $collectionElement2 = $instance->getCollection()[1];
+        self::assertInstanceOf(ImportEntity::class, $collectionElement2);
+        self::assertSame('element2 via setter', $collectionElement2->getName());
+        self::assertSame(
+            $element2->timestamp->format(DATE_ATOM),
+            $collectionElement2->timestamp->format(DATE_ATOM)
+        );
+
+        self::assertSame('', $instance->getName());
+        self::assertNull($instance->getParent());
+        self::assertNull($instance->timestamp);
+    }
+
     public function testImportOfDtoList(): void
     {
-        $helper = new Helper();
+        $helper = new ImportHelper();
 
         $data = [
             'dtoList' => [
@@ -282,7 +343,7 @@ class ImportTest extends AbstractOrmTestCase
             ],
         ];
 
-        $instance = $helper->fromArray($data, ImportEntity::class);
+        $instance = $helper->objectFromArray($data, ImportEntity::class);
 
         self::assertInstanceOf(ImportEntity::class, $instance);
         self::assertCount(2, $instance->dtoList);
@@ -298,7 +359,7 @@ class ImportTest extends AbstractOrmTestCase
 
     public function testImportOfDtoListFailsWithInvalidElement(): void
     {
-        $helper = new Helper();
+        $helper = new ImportHelper();
 
         $data = [
             'dtoList' => [
@@ -315,12 +376,12 @@ class ImportTest extends AbstractOrmTestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage("Given '_entityClass' Vrok\ImportExport\Tests\Fixtures\NestedDTO is not a subclass/implementation of Vrok\ImportExport\Tests\Fixtures\TestDTO!");
 
-        $helper->fromArray($data, ImportEntity::class);
+        $helper->objectFromArray($data, ImportEntity::class);
     }
 
     public function testImportOfInterfaceList(): void
     {
-        $helper = new Helper();
+        $helper = new ImportHelper();
 
         $data = [
             'interfaceList' => [
@@ -341,7 +402,7 @@ class ImportTest extends AbstractOrmTestCase
             ],
         ];
 
-        $instance = $helper->fromArray($data, ImportEntity::class);
+        $instance = $helper->objectFromArray($data, ImportEntity::class);
 
         self::assertInstanceOf(ImportEntity::class, $instance);
         self::assertCount(3, $instance->interfaceList);
@@ -363,7 +424,7 @@ class ImportTest extends AbstractOrmTestCase
 
     public function testImportOfInterfaceListFailsWithInvalidElement(): void
     {
-        $helper = new Helper();
+        $helper = new ImportHelper();
 
         $data = [
             'interfaceList' => [
@@ -381,12 +442,12 @@ class ImportTest extends AbstractOrmTestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage("Given '_entityClass' Vrok\ImportExport\Tests\Fixtures\ExportEntity is not a subclass/implementation of Vrok\ImportExport\Tests\Fixtures\DtoInterface!");
 
-        $helper->fromArray($data, ImportEntity::class);
+        $helper->objectFromArray($data, ImportEntity::class);
     }
 
     public function testImportOfNestedDtos(): void
     {
-        $helper = new Helper();
+        $helper = new ImportHelper();
 
         $data = [
             'interfaceList' => [
@@ -417,7 +478,7 @@ class ImportTest extends AbstractOrmTestCase
             ],
         ];
 
-        $instance = $helper->fromArray($data, ImportEntity::class);
+        $instance = $helper->objectFromArray($data, ImportEntity::class);
 
         self::assertInstanceOf(ImportEntity::class, $instance);
         self::assertCount(1, $instance->interfaceList);
@@ -445,13 +506,13 @@ class ImportTest extends AbstractOrmTestCase
 
     public function testImportOfEmptyList(): void
     {
-        $helper = new Helper();
+        $helper = new ImportHelper();
 
         $data = [
             'dtoList' => [],
         ];
 
-        $instance = $helper->fromArray($data, ImportEntity::class);
+        $instance = $helper->objectFromArray($data, ImportEntity::class);
 
         self::assertInstanceOf(ImportEntity::class, $instance);
         self::assertCount(0, $instance->dtoList);
@@ -459,7 +520,7 @@ class ImportTest extends AbstractOrmTestCase
 
     public function testImportOfNullListFails(): void
     {
-        $helper = new Helper();
+        $helper = new ImportHelper();
 
         $data = [
             'dtoList' => null,
@@ -468,12 +529,12 @@ class ImportTest extends AbstractOrmTestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage("Found NULL for Vrok\ImportExport\Tests\Fixtures\ImportEntity::dtoList, but property is not nullable!");
 
-        $helper->fromArray($data, ImportEntity::class);
+        $helper->objectFromArray($data, ImportEntity::class);
     }
 
     public function testImportOfListWithoutArrayFails(): void
     {
-        $helper = new Helper();
+        $helper = new ImportHelper();
 
         $data = [
             'dtoList' => 'string',
@@ -481,27 +542,53 @@ class ImportTest extends AbstractOrmTestCase
 
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage("Property Vrok\ImportExport\Tests\Fixtures\ImportEntity::dtoList is marked as list of 'Vrok\ImportExport\Tests\Fixtures\TestDTO' but it is no array: \"string\"!");
-        $helper->fromArray($data, ImportEntity::class);
+        $helper->objectFromArray($data, ImportEntity::class);
     }
 
-    public function testImportOfListWithInvalidEntryFails(): void
+    public function testImportNestedListWithMixedEntries(): void
     {
-        $helper = new Helper();
+        $helper = new ImportHelper();
 
         $data = [
             'dtoList' => [
+                // empty array is valid as "listOf" specifies an importable class
+                [],
+
+                // int, float, string are allowed as the export of mixed lists
+                // is possible
+                12,
                 'string',
+                3.14,
+            ],
+        ];
+
+        $instance = $helper->objectFromArray($data, ImportEntity::class);
+        self::assertInstanceOf(ImportEntity::class, $instance);
+        self::assertCount(4, $instance->dtoList);
+        self::assertInstanceOf(TestDTO::class, $instance->dtoList[0]);
+        self::assertSame(12, $instance->dtoList[1]);
+        self::assertSame('string', $instance->dtoList[2]);
+        self::assertSame(3.14, $instance->dtoList[3]);
+    }
+
+    public function testImportNestedListFailsWithInvalidObject(): void
+    {
+        $helper = new ImportHelper();
+
+        $data = [
+            'dtoList' => [
+                $this,
             ],
         ];
 
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage("Property Vrok\ImportExport\Tests\Fixtures\ImportEntity::dtoList is marked as list of 'Vrok\ImportExport\Tests\Fixtures\TestDTO' but entry is no array: \"string\"!");
-        $helper->fromArray($data, ImportEntity::class);
+        $this->expectExceptionMessage("Property Vrok\ImportExport\Tests\Fixtures\ImportEntity::dtoList is marked as list of 'Vrok\ImportExport\Tests\Fixtures\TestDTO'");
+        $helper->objectFromArray($data, ImportEntity::class);
     }
 
     public function testImportOfInterfaceListFailsWithoutEntityClass(): void
     {
-        $helper = new Helper();
+        $helper = new ImportHelper();
 
         $data = [
             'interfaceList' => [
@@ -515,12 +602,12 @@ class ImportTest extends AbstractOrmTestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Cannot create instance of the interface Vrok\ImportExport\Tests\Fixtures\DtoInterface, concrete class needed!');
 
-        $helper->fromArray($data, ImportEntity::class);
+        $helper->objectFromArray($data, ImportEntity::class);
     }
 
     public function testImportWithIncludeFilter(): void
     {
-        $helper = new Helper();
+        $helper = new ImportHelper();
 
         $data = [
             'name'          => 'test',
@@ -553,7 +640,7 @@ class ImportTest extends AbstractOrmTestCase
             ],
         ];
 
-        $instance = $helper->fromArray(
+        $instance = $helper->objectFromArray(
             $data,
             ImportEntity::class,
             [
@@ -583,7 +670,7 @@ class ImportTest extends AbstractOrmTestCase
 
     public function testImportWithExcludeFilter(): void
     {
-        $helper = new Helper();
+        $helper = new ImportHelper();
 
         $data = [
             'name'          => 'test',
@@ -616,7 +703,7 @@ class ImportTest extends AbstractOrmTestCase
             ],
         ];
 
-        $instance = $helper->fromArray(
+        $instance = $helper->objectFromArray(
             $data,
             ImportEntity::class,
             [
@@ -644,22 +731,24 @@ class ImportTest extends AbstractOrmTestCase
 
         self::assertCount(3, $element1->nestedInterfaceList);
     }
+    // endregion
 
-    public function testThrowsExceptionWithoutClassname(): void
+    // region Exceptions from objectFromArray
+    public function testImportThrowsExceptionWithoutClassname(): void
     {
-        $helper = new Helper();
+        $helper = new ImportHelper();
 
         $data = [
             'name' => 'test',
         ];
 
         $this->expectException(\RuntimeException::class);
-        $helper->fromArray($data);
+        $helper->objectFromArray($data);
     }
 
-    public function testThrowsExceptionWithUnknownClass(): void
+    public function testImportThrowsExceptionWithUnknownClass(): void
     {
-        $helper = new Helper();
+        $helper = new ImportHelper();
 
         $data = [
             'name' => 'test',
@@ -668,12 +757,12 @@ class ImportTest extends AbstractOrmTestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Class Fake\Class does not exist!');
 
-        $helper->fromArray($data, 'Fake\Class');
+        $helper->objectFromArray($data, 'Fake\Class');
     }
 
-    public function testThrowsExceptionWithAbstractClass(): void
+    public function testImportThrowsExceptionWithAbstractClass(): void
     {
-        $helper = new Helper();
+        $helper = new ImportHelper();
 
         $data = [
             'name' => 'test',
@@ -682,12 +771,12 @@ class ImportTest extends AbstractOrmTestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Cannot create instance of the abstract class Vrok\ImportExport\Tests\AbstractOrmTestCase, concrete class needed!');
 
-        $helper->fromArray($data, AbstractOrmTestCase::class);
+        $helper->objectFromArray($data, AbstractOrmTestCase::class);
     }
 
-    public function testThrowsExceptionWithAbstractEntityClass(): void
+    public function testImportThrowsExceptionWithAbstractEntityClass(): void
     {
-        $helper = new Helper();
+        $helper = new ImportHelper();
 
         $data = [
             '_entityClass' => AbstractOrmTestCase::class,
@@ -697,12 +786,12 @@ class ImportTest extends AbstractOrmTestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Cannot create instance of the abstract class Vrok\ImportExport\Tests\AbstractOrmTestCase, concrete class needed!');
 
-        $helper->fromArray($data);
+        $helper->objectFromArray($data);
     }
 
-    public function testThrowsExceptionWithInvalidChildClass(): void
+    public function testImportThrowsExceptionWithInvalidChildClass(): void
     {
-        $helper = new Helper();
+        $helper = new ImportHelper();
 
         $data = [
             '_entityClass' => NestedDTO::class,
@@ -712,12 +801,12 @@ class ImportTest extends AbstractOrmTestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage("Given '_entityClass' Vrok\ImportExport\Tests\Fixtures\NestedDTO is not a subclass/implementation of Vrok\ImportExport\Tests\Fixtures\ImportEntity!");
 
-        $helper->fromArray($data, ImportEntity::class);
+        $helper->objectFromArray($data, ImportEntity::class);
     }
 
-    public function testThrowsExceptionWithoutReferenceClassname(): void
+    public function testImportThrowsExceptionWithoutReferenceClassname(): void
     {
-        $helper = new Helper();
+        $helper = new ImportHelper();
 
         $data = [
             'collection' => [
@@ -728,22 +817,43 @@ class ImportTest extends AbstractOrmTestCase
         ];
 
         $this->expectException(\RuntimeException::class);
-        $helper->fromArray($data, ImportEntity::class);
+        $this->expectExceptionMessage('No entityClass given to instantiate the data');
+        $helper->objectFromArray($data, ExportEntity::class);
     }
 
-    public function testThrowsExceptionForUnannotatedReference(): void
+    public function testImportThrowsExceptionForUnannotatedReference(): void
     {
-        $helper = new Helper();
+        $helper = new ImportHelper();
 
         $data = [
             'otherReference' => ['test'],
         ];
 
         $this->expectException(\RuntimeException::class);
-        $helper->fromArray($data);
+        $helper->objectFromArray($data);
     }
 
-    public function testThrowsExceptionWithoutObjectManager(): void
+    public function testImportThrowsExceptionForInvalidReference(): void
+    {
+        $em = $this->buildEntityManager();
+        $this->setupSchema();
+
+        $helper = new ImportHelper();
+        $helper->setObjectManager($em);
+
+        $data = [
+            'collection' => [
+                'does not exist',
+            ],
+        ];
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Could not find referenced & mapped record');
+
+        $helper->objectFromArray($data, ImportEntity::class);
+    }
+
+    public function testImportThrowsExceptionWithoutObjectManager(): void
     {
         $em = $this->buildEntityManager();
         $this->setupSchema();
@@ -759,24 +869,218 @@ class ImportTest extends AbstractOrmTestCase
         ];
 
         // no objectManager set -> exception when referencing by identifier
-        $helper = new Helper();
+        $helper = new ImportHelper();
 
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('objectManager is not set to find object!');
-        $helper->fromArray($data, ImportEntity::class);
+        $helper->objectFromArray($data, ImportEntity::class);
     }
 
-    public function testThrowsExceptionForAmbiguousUnionType(): void
+    public function testImportThrowsExceptionForAmbiguousUnionType(): void
     {
         $data = [
             'union' => $this,
         ];
 
         // no objectManager set -> exception when referencing by identifier
-        $helper = new Helper();
+        $helper = new ImportHelper();
 
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Cannot import object, found ambiguous union type');
-        $helper->fromArray($data, ImportEntity::class);
+        $helper->objectFromArray($data, ImportEntity::class);
     }
+    // endregion
+
+    // region collectionFromArray
+    public function testCollectionFromArrayWithoutEntityClass(): void
+    {
+        $helper = new ImportHelper();
+
+        $data = [
+            ['name' => 'e1'],
+            ['name' => 'e2'],
+        ];
+
+        $collection = $helper->collectionFromArray($data, AutoincrementEntity::class);
+
+        self::assertCount(2, $collection);
+        self::assertInstanceOf(AutoincrementEntity::class, $collection[0]);
+        self::assertSame('e1', $collection[0]->name);
+        self::assertInstanceOf(AutoincrementEntity::class, $collection[1]);
+        self::assertSame('e2', $collection[1]->name);
+    }
+
+    public function testCollectionFromArrayAllowsMixedTypes(): void
+    {
+        $helper = new ImportHelper();
+
+        $element2 = new AutoincrementEntity();
+        $element2->name = 'e2';
+
+        $data = [
+            ['name' => 'e1'],
+            $element2,
+        ];
+
+        $collection = $helper->collectionFromArray($data, AutoincrementEntity::class);
+
+        self::assertCount(2, $collection);
+        self::assertInstanceOf(AutoincrementEntity::class, $collection[0]);
+        self::assertSame('e1', $collection[0]->name);
+        self::assertInstanceOf(AutoincrementEntity::class, $collection[1]);
+        self::assertSame('e2', $collection[1]->name);
+    }
+
+    public function testCollectionFromArrayRejectsInvalidObjects(): void
+    {
+        $helper = new ImportHelper();
+
+        $data = [
+            ['name' => 'e1'],
+            new \DateTimeImmutable(),
+        ];
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Collection should be instances of');
+        $helper->collectionFromArray($data, AutoincrementEntity::class);
+    }
+
+    public function testCollectionFromArrayRejectsInvalidTypes(): void
+    {
+        $helper = new ImportHelper();
+
+        $data = [
+            ['name' => 'e1'],
+            3.14,
+        ];
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage("Don't know how to import collection element");
+        $helper->collectionFromArray($data, AutoincrementEntity::class);
+    }
+    // endregion
+
+    // region importEntityCollection
+    public function testImportEntityCollection(): void
+    {
+        $em = $this->buildEntityManager();
+        $this->setupSchema();
+
+        $helper = new ImportHelper();
+        $helper->setObjectManager($em);
+
+        $data = [
+            ['name' => 'e1'],
+            ['name' => 'e2'],
+        ];
+
+        $helper->importEntityCollection($data, AutoincrementEntity::class);
+
+        $collection = $em->getRepository(AutoincrementEntity::class)->findAll();
+
+        self::assertCount(2, $collection);
+        self::assertInstanceOf(AutoincrementEntity::class, $collection[0]);
+        self::assertSame('e1', $collection[0]->name);
+        self::assertInstanceOf(AutoincrementEntity::class, $collection[1]);
+        self::assertSame('e2', $collection[1]->name);
+    }
+
+    public function testImportEntityCollectionRejectsNonArrays(): void
+    {
+        $helper = new ImportHelper();
+
+        $data = [
+            ['name' => 'e1'],
+            $this,
+        ];
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Collection element must be the array representation');
+        $helper->importEntityCollection($data, AutoincrementEntity::class);
+    }
+
+    public function testImportEntityCollectionRequiresObjectManager(): void
+    {
+        $helper = new ImportHelper();
+
+        $data = [
+            ['name' => 'e1'],
+        ];
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('ObjectManager must be set first!');
+        $helper->importEntityCollection($data, AutoincrementEntity::class);
+    }
+    // endregion
+
+    // region IdentityMapping
+    public function testSetIdentityMappingClassesRequiresObjectManager(): void
+    {
+        $helper = new ImportHelper();
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Object manager must be set to use identity mapping!');
+        $helper->setIdentityMappingClasses([ImportEntity::class]);
+    }
+
+    public function testImportWithIdentityMapping(): void
+    {
+        $em = $this->buildEntityManager();
+        $this->setupSchema();
+
+        $helper = new ImportHelper();
+        $helper->setObjectManager($em);
+        $helper->setIdentityMappingClasses([
+            AutoincrementEntity::class,
+        ]);
+
+        $data = [
+            [
+                'id'   => 99999,
+                'name' => 'e1',
+            ],
+            [
+                'id'     => 77777,
+                'name'   => 'e2',
+                'parent' => 99999,
+            ],
+        ];
+
+        $collection = $helper->collectionFromArray($data, AutoincrementEntity::class);
+
+        self::assertCount(2, $collection);
+
+        self::assertSame('e1', $collection[0]->name);
+        self::assertNotSame(99999, $collection[0]->id);
+
+        self::assertSame('e2', $collection[1]->name);
+        self::assertNotSame(77777, $collection[1]->id);
+        self::assertInstanceOf(AutoincrementEntity::class, $collection[1]->parent);
+        self::assertSame('e1', $collection[1]->parent->name);
+    }
+
+    public function testImportThrowsWithNonMappedIdentity(): void
+    {
+        $em = $this->buildEntityManager();
+        $this->setupSchema();
+
+        $helper = new ImportHelper();
+        $helper->setObjectManager($em);
+        $helper->setIdentityMappingClasses([
+            AutoincrementEntity::class,
+        ]);
+
+        $data = [
+            [
+                'id'     => 77777,
+                'name'   => 'e2',
+                'parent' => 99999,
+            ],
+        ];
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('ID for referenced record');
+        $helper->collectionFromArray($data, AutoincrementEntity::class);
+    }
+    // endregion
 }
