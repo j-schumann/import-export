@@ -8,6 +8,7 @@ namespace Vrok\ImportExport\Tests;
 
 use PHPUnit\Framework\TestCase;
 use Vrok\ImportExport\ExportHelper;
+use Vrok\ImportExport\Tests\Fixtures\AutoincrementEntity;
 use Vrok\ImportExport\Tests\Fixtures\ExportEntity;
 use Vrok\ImportExport\Tests\Fixtures\ImportEntity;
 use Vrok\ImportExport\Tests\Fixtures\NestedDTO;
@@ -432,6 +433,17 @@ class ExportHelperTest extends TestCase
         $entity = new ImportEntity();
 
         $this->expectException(\RuntimeException::class);
+        $helper->objectToArray($entity);
+    }
+
+    public function testThrowsExceptionWithNonExportableProperty(): void
+    {
+        $helper = new ExportHelper();
+        $entity = new AutoincrementEntity();
+        $entity->mixed = $this;
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage("Don't know how to export");
         $helper->objectToArray($entity);
     }
 

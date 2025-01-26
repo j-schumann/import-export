@@ -338,10 +338,6 @@ class ImportHelper
         array $propertyFilter = [],
         bool $isExcludeFilter = false,
     ): array {
-        if (null === $list) {
-            return [];
-        }
-
         if (!is_array($list)) {
             $json = json_encode($list, JSON_THROW_ON_ERROR);
             throw new \RuntimeException("Property $property->class::$property->name is marked as list of '$listOf' but it is no array: $json!");

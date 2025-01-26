@@ -993,7 +993,6 @@ class ImportHelperTest extends AbstractOrmTestCase
         $helper = new ImportHelper();
         $helper->setObjectManager($em);
 
-
         $data = [
             ['name' => 'e1'],
             $this,
