@@ -987,7 +987,12 @@ class ImportHelperTest extends AbstractOrmTestCase
 
     public function testImportEntityCollectionRejectsNonArrays(): void
     {
+        $em = $this->buildEntityManager();
+        $this->setupSchema();
+
         $helper = new ImportHelper();
+        $helper->setObjectManager($em);
+
 
         $data = [
             ['name' => 'e1'],
