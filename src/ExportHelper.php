@@ -70,8 +70,8 @@ class ExportHelper
         foreach ($properties as $propertyName => $attribute) {
             // empty array also counts as "no filter applied"
             if ([] !== $propertyFilter && (
-                (!in_array($propertyName, $propertyFilter, true) && !$isExcludeFilter)
-                || (in_array($propertyName, $propertyFilter, true) && $isExcludeFilter)
+                (!\in_array($propertyName, $propertyFilter, true) && !$isExcludeFilter)
+                || (\in_array($propertyName, $propertyFilter, true) && $isExcludeFilter)
             )
             ) {
                 continue;
@@ -82,7 +82,7 @@ class ExportHelper
             if (null === $propValue) {
                 $data[$propertyName] = null;
             } elseif ($propValue instanceof \DateTimeInterface) {
-                $data[$propertyName] = $propValue->format(DATE_ATOM);
+                $data[$propertyName] = $propValue->format(\DATE_ATOM);
             } elseif ($attribute->asList || $propValue instanceof Collection) {
                 if ('' !== $attribute->referenceByIdentifier) {
                     $data[$propertyName] = $this->collectionToArray(
@@ -96,7 +96,7 @@ class ExportHelper
                         $isExcludeFilter
                     );
                 }
-            } elseif (is_object($propValue) && $this->isExportableClass($propValue::class)) {
+            } elseif (\is_object($propValue) && $this->isExportableClass($propValue::class)) {
                 if ('' !== $attribute->referenceByIdentifier) {
                     $identifier = $this->objectToArray(
                         $propValue,
@@ -121,11 +121,11 @@ class ExportHelper
                 // Keep base types as-is. This can/will cause errors if an array
                 // contains objects. Lists of DTOs should be marked with
                 // 'asList' on the ExportableProperty attribute.
-                is_array($propValue)
-                || is_int($propValue)
-                || is_float($propValue)
-                || is_bool($propValue)
-                || is_string($propValue)
+                \is_array($propValue)
+                || \is_int($propValue)
+                || \is_float($propValue)
+                || \is_bool($propValue)
+                || \is_string($propValue)
             ) {
                 $data[$propertyName] = $propValue;
             } else {
@@ -155,14 +155,14 @@ class ExportHelper
         // is the identifier that is to be exported, instead of the whole
         // entity.
         $referenceByIdentifier = false;
-        if (!$isExcludeFilter && 1 === count($propertyFilter)) {
+        if (!$isExcludeFilter && 1 === \count($propertyFilter)) {
             $referenceByIdentifier = array_values($propertyFilter)[0];
         }
 
         $values = [];
         foreach ($collection as $element) {
             // fail-safe for mixed collections, e.g. either DTO or string
-            if (!is_object($element)) {
+            if (!\is_object($element)) {
                 $values[] = $element;
                 continue;
             }

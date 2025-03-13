@@ -198,8 +198,8 @@ class ImportHelperTest extends AbstractOrmTestCase
         self::assertInstanceOf(ImportEntity::class, $instance->getParent());
         self::assertSame('parent via setter', $instance->getParent()->getName());
         self::assertSame(
-            $parent->timestamp->format(DATE_ATOM),
-            $instance->getParent()->timestamp->format(DATE_ATOM)
+            $parent->timestamp->format(\DATE_ATOM),
+            $instance->getParent()->timestamp->format(\DATE_ATOM)
         );
 
         self::assertSame('', $instance->getName());
@@ -311,16 +311,16 @@ class ImportHelperTest extends AbstractOrmTestCase
         self::assertInstanceOf(ImportEntity::class, $collectionElement1);
         self::assertSame('element1 via setter', $collectionElement1->getName());
         self::assertSame(
-            $element1->timestamp->format(DATE_ATOM),
-            $collectionElement1->timestamp->format(DATE_ATOM)
+            $element1->timestamp->format(\DATE_ATOM),
+            $collectionElement1->timestamp->format(\DATE_ATOM)
         );
 
         $collectionElement2 = $instance->getCollection()[1];
         self::assertInstanceOf(ImportEntity::class, $collectionElement2);
         self::assertSame('element2 via setter', $collectionElement2->getName());
         self::assertSame(
-            $element2->timestamp->format(DATE_ATOM),
-            $collectionElement2->timestamp->format(DATE_ATOM)
+            $element2->timestamp->format(\DATE_ATOM),
+            $collectionElement2->timestamp->format(\DATE_ATOM)
         );
 
         self::assertSame('', $instance->getName());

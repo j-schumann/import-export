@@ -120,7 +120,7 @@ class ImportHelper
         $className = $data['_entityClass'] ?? $entityClass;
 
         if (empty($className)) {
-            $encoded = json_encode($data, JSON_THROW_ON_ERROR);
+            $encoded = json_encode($data, \JSON_THROW_ON_ERROR);
             throw new \RuntimeException("No entityClass given to instantiate the data: $encoded");
         }
 
@@ -148,14 +148,14 @@ class ImportHelper
         foreach ($this->getImportableProperties($className) as $propName => $propData) {
             // empty array also counts as "no filter applied"
             if ([] !== $propertyFilter && (
-                (!in_array($propName, $propertyFilter, true) && !$isExcludeFilter)
-                || (in_array($propName, $propertyFilter, true) && $isExcludeFilter)
+                (!\in_array($propName, $propertyFilter, true) && !$isExcludeFilter)
+                || (\in_array($propName, $propertyFilter, true) && $isExcludeFilter)
             )
             ) {
                 continue;
             }
 
-            if (!array_key_exists($propName, $data)) {
+            if (!\array_key_exists($propName, $data)) {
                 continue;
             }
 
@@ -182,13 +182,13 @@ class ImportHelper
                     // simply set standard properties, the propertyAccessor will throw
                     // an exception if the types don't match.
                     : $data[$propName];
-            } elseif (is_object($data[$propName])) {
+            } elseif (\is_object($data[$propName])) {
                 // set already instantiated objects, we cannot modify/convert those,
                 // and the may have different classes, e.g. when the type is a union.
                 // If the object type is not allowed the propertyAccessor will throw
                 // an exception.
                 $value = $data[$propName];
-            } elseif (is_array($data[$propName]) && !$typeDetails['classname']) {
+            } elseif (\is_array($data[$propName]) && !$typeDetails['classname']) {
                 // We have an array but no type information -> the target property
                 // could be a unionType that allows multiple classes or it could
                 // be untyped. So if the importer expects us to create an instance
@@ -212,7 +212,7 @@ class ImportHelper
                 // the actual class
                 || isset($data[$propName]['_entityClass'])
             ) {
-                $value = is_int($data[$propName]) || is_string($data[$propName])
+                $value = \is_int($data[$propName]) || \is_string($data[$propName])
                     ? $this->getRecordFromReference(
                         $typeDetails['classname'],
                         $data[$propName]
@@ -272,9 +272,9 @@ class ImportHelper
     ): array {
         $collection = [];
         foreach ($data as $element) {
-            if ((is_int($element) || is_string($element)) && $className) {
+            if ((\is_int($element) || \is_string($element)) && $className) {
                 $collection[] = $this->getRecordFromReference($className, $element);
-            } elseif (is_object($element)) {
+            } elseif (\is_object($element)) {
                 if ($className && !$element instanceof $className) {
                     $elementClass = $element::class;
                     throw new \RuntimeException("Collection should be instances of $className but found $elementClass!");
@@ -282,7 +282,7 @@ class ImportHelper
 
                 // use objects directly...
                 $collection[] = $element;
-            } elseif (is_array($element)) {
+            } elseif (\is_array($element)) {
                 // ... or try to create, if className is not set than each
                 // element must contain an _entityClass
                 $collection[] = $this->objectFromArray(
@@ -318,7 +318,7 @@ class ImportHelper
         }
 
         foreach ($data as $element) {
-            if (!is_array($element)) {
+            if (!\is_array($element)) {
                 throw new \RuntimeException("Collection element must be the array representation of $className!");
             }
 
@@ -348,18 +348,18 @@ class ImportHelper
         array $propertyFilter = [],
         bool $isExcludeFilter = false,
     ): array {
-        if (!is_array($list)) {
-            $json = json_encode($list, JSON_THROW_ON_ERROR);
+        if (!\is_array($list)) {
+            $json = json_encode($list, \JSON_THROW_ON_ERROR);
             throw new \RuntimeException("Property $property->class::$property->name is marked as list of '$listOf' but it is no array: $json!");
         }
 
         foreach ($list as $key => $entry) {
-            if (is_object($entry) && !($entry instanceof $listOf)) {
+            if (\is_object($entry) && !($entry instanceof $listOf)) {
                 $entryClass = $entry::class;
                 throw new \RuntimeException("Property $property->class::$property->name is marked as list of '$listOf' but found an instance of $entryClass!");
             }
 
-            if (!is_array($entry)) {
+            if (!\is_array($entry)) {
                 // Do not throw an error here: This is a concession to allowing
                 // the export of mixed lists (e.g. DTOs + strings), we have to
                 // allow base types or already instantiated objects here too,

@@ -71,6 +71,6 @@ class ReflectionHelper
             $attributes
         );
 
-        return 1 === count($attributes) ? $attributes[0] : $attributes;
+        return 1 === \count($attributes) ? $attributes[0] : $attributes;
     }
 }

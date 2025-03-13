@@ -89,7 +89,7 @@ class ExportHelperTest extends TestCase
         $entity->timestamp = $now;
 
         $data = $helper->objectToArray($entity);
-        self::assertSame($now->format(DATE_ATOM), $data['timestamp']);
+        self::assertSame($now->format(\DATE_ATOM), $data['timestamp']);
     }
 
     public function testExportWithNestedCollections(): void
