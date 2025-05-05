@@ -415,7 +415,7 @@ class ImportHelper
         $mappedId = $id;
 
         foreach ($this->identityMappingClasses as $mappingClass) {
-            if (is_a($mappingClass, $className, true)) {
+            if (is_a($className, $mappingClass, true)) {
                 if (!isset($this->identityMap[$mappingClass][$id])) {
                     throw new \RuntimeException("ID for referenced record $className#$id was not yet mapped, check import order!");
                 }

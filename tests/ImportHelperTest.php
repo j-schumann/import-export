@@ -7,6 +7,7 @@ declare(strict_types=1);
 namespace Vrok\ImportExport\Tests;
 
 use Vrok\ImportExport\ImportHelper;
+use Vrok\ImportExport\Tests\Fixtures\AbstractImportEntity;
 use Vrok\ImportExport\Tests\Fixtures\AutoincrementEntity;
 use Vrok\ImportExport\Tests\Fixtures\ExportEntity;
 use Vrok\ImportExport\Tests\Fixtures\ImportEntity;
@@ -176,33 +177,51 @@ class ImportHelperTest extends AbstractOrmTestCase
 
     public function testImportOfNestedRecordAsReference(): void
     {
+        // region prepare parent
         $em = $this->buildEntityManager();
         $this->setupSchema();
 
-        $parent = new ImportEntity();
-        $parent->setName('parent');
-        $parent->timestamp = new \DateTimeImmutable('yesterday');
-        $em->persist($parent);
-        $em->flush();
-        $em->clear();
-
-        $data = [
-            'parent' => $parent->getName(),
-        ];
-
         $helper = new ImportHelper();
         $helper->setObjectManager($em);
+
+        // even though the AbstractImportEntity only allows for ImportEntity
+        // as $parent, the identity mapping works, as all subclasses of
+        // AbstractImportEntity are also mapped:
+        $helper->setIdentityMappingClasses([
+            AbstractImportEntity::class,
+        ]);
+
+        // we not just simply create the entity, its identifier must be in
+        // the identity map to test the mapping
+        $parent = $helper->objectFromArray([
+            'id'        => 9_999_999,
+            'name'      => 'parent',
+            'timestamp' => 'yesterday',
+        ], ImportEntity::class);
+
+        self::assertNotSame(9_999_999, $parent->id);
+        // endregion
+
+        $data = [
+            'id'     => 9_999_998,
+            'name'   => 'child',
+            'parent' => 9_999_999,
+        ];
+
         $instance = $helper->objectFromArray($data, ImportEntity::class);
 
         self::assertInstanceOf(ImportEntity::class, $instance);
+        self::assertNotSame(9_999_998, $instance->id);
+
         self::assertInstanceOf(ImportEntity::class, $instance->getParent());
         self::assertSame('parent via setter', $instance->getParent()->getName());
+        self::assertsame($parent->id, $instance->getParent()->id);
         self::assertSame(
             $parent->timestamp->format(\DATE_ATOM),
             $instance->getParent()->timestamp->format(\DATE_ATOM)
         );
 
-        self::assertSame('', $instance->getName());
+        self::assertSame('child via setter', $instance->getName());
         self::assertCount(0, $instance->getCollection());
         self::assertNull($instance->timestamp);
     }
@@ -297,8 +316,8 @@ class ImportHelperTest extends AbstractOrmTestCase
 
         $data = [
             'collection' => [
-                $element1->getName(),
-                $element2->getName(),
+                $element1->id,
+                $element2->id,
             ],
         ];
 
@@ -541,7 +560,7 @@ class ImportHelperTest extends AbstractOrmTestCase
         ];
 
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage("Property Vrok\ImportExport\Tests\Fixtures\ImportEntity::dtoList is marked as list of 'Vrok\ImportExport\Tests\Fixtures\TestDTO' but it is no array: \"string\"!");
+        $this->expectExceptionMessage("dtoList is marked as list of 'Vrok\ImportExport\Tests\Fixtures\TestDTO' but it is no array: \"string\"!");
         $helper->objectFromArray($data, ImportEntity::class);
     }
 
@@ -582,7 +601,7 @@ class ImportHelperTest extends AbstractOrmTestCase
         ];
 
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage("Property Vrok\ImportExport\Tests\Fixtures\ImportEntity::dtoList is marked as list of 'Vrok\ImportExport\Tests\Fixtures\TestDTO'");
+        $this->expectExceptionMessage("dtoList is marked as list of 'Vrok\ImportExport\Tests\Fixtures\TestDTO'");
         $helper->objectFromArray($data, ImportEntity::class);
     }
 
