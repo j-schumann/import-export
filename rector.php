@@ -43,9 +43,6 @@ return static function (RectorConfig $rectorConfig): void {
         // mostly unnecessary as they are callbacks to array_filter etc.
         AddArrowFunctionReturnTypeRector::class,
 
-        // replaces our (imported) Types::JSON with \Doctrine\DBAL\Types\Types::JSON
-        AttributeKeyToClassConstFetchRector::class,
-
         // replaces null === $project with !$project instanceof Project
         FlipTypeControlToUseExclusiveTypeRector::class,
 

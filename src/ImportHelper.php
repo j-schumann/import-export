@@ -54,7 +54,7 @@ class ImportHelper
      */
     public function setIdentityMappingClasses(array $mappingClasses): void
     {
-        if (!$this->objectManager) {
+        if (null === $this->objectManager) {
             throw new \RuntimeException('Object manager must be set to use identity mapping!');
         }
 
@@ -312,8 +312,8 @@ class ImportHelper
         ?string $className = null,
         array $propertyFilter = [],
         bool $isExcludeFilter = false,
-    ) {
-        if (!$this->objectManager) {
+    ): void {
+        if (null === $this->objectManager) {
             throw new \RuntimeException('ObjectManager must be set first!');
         }
 
