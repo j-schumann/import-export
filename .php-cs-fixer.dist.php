@@ -22,6 +22,10 @@ return $config
             ],
         ],
 
+        'method_argument_space' => [
+            'on_multiline' =>  'ensure_fully_multiline',
+        ],
+
         // this would otherwise separate annotations
         'phpdoc_separation'      => [
             'skip_unlisted_annotations' => true,

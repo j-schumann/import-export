@@ -9,6 +9,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Mapping as ORM;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Uid\UuidV7;
 use Vrok\ImportExport\ImportableProperty;
 
 #[ORM\Entity]
@@ -93,6 +94,12 @@ abstract class AbstractImportEntity
     #[ImportableProperty]
     #[ORM\Column(nullable: true)]
     public ?\DateTimeImmutable $timestamp = null;
+    // endregion
+
+    // region UUID nullable property w/o getter/setter
+    #[ImportableProperty]
+    #[ORM\Column(nullable: true)]
+    public ?UuidV7 $uuid = null;
     // endregion
 
     // region typed (object), nullable property w/o getter/setter

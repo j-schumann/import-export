@@ -26,13 +26,23 @@ abstract class AbstractOrmTestCase extends TestCase
     {
         parent::setUp();
 
-        $configuration = ORMSetup::createAttributeMetadataConfiguration(
-            [__DIR__.'/Fixtures'],
-            true
-        );
-        $configuration->setProxyDir(sys_get_temp_dir());
-        $configuration->setProxyNamespace('Tests\Fixtures\Proxies');
-        $configuration->setAutoGenerateProxyClasses(true);
+        if (method_exists(ORMSetup::class, 'createAttributeMetadataConfig')) {
+            $configuration = ORMSetup::createAttributeMetadataConfig(
+                [__DIR__.'/Fixtures'],
+                true
+            );
+        }
+        // @todo remove when only ORM 4.x is supported
+        else {
+            $configuration = ORMSetup::createAttributeMetadataConfiguration(
+                [__DIR__.'/Fixtures'],
+                true
+            );
+
+            $configuration->setProxyDir(sys_get_temp_dir());
+            $configuration->setProxyNamespace('Tests\Fixtures\Proxies');
+            $configuration->setAutoGenerateProxyClasses(true);
+        }
 
         $this->configuration = $configuration;
     }

@@ -6,6 +6,7 @@ declare(strict_types=1);
 
 namespace Vrok\ImportExport\Tests;
 
+use Symfony\Component\Uid\UuidV7;
 use Vrok\ImportExport\ImportHelper;
 use Vrok\ImportExport\Tests\Fixtures\AbstractImportEntity;
 use Vrok\ImportExport\Tests\Fixtures\AutoincrementEntity;
@@ -53,6 +54,24 @@ class ImportHelperTest extends AbstractOrmTestCase
 
         $now = new \DateTimeImmutable();
         self::assertGreaterThan($now, $instance->timestamp);
+    }
+
+    public function testImportOfUuid(): void
+    {
+        $helper = new ImportHelper();
+
+        $data = [
+            'uuid' => '0198324f-f10c-7ec4-b138-0b3f06feb919',
+        ];
+
+        $instance = $helper->objectFromArray($data, ImportEntity::class);
+
+        self::assertInstanceOf(ImportEntity::class, $instance);
+        self::assertInstanceOf(UuidV7::class, $instance->uuid);
+        self::assertSame(
+            '0198324f-f10c-7ec4-b138-0b3f06feb919',
+            $instance->uuid->toRfc4122()
+        );
     }
 
     public function testImportOfNull(): void
@@ -1090,7 +1109,8 @@ class ImportHelperTest extends AbstractOrmTestCase
                     77777 => 2,
                 ],
             ],
-            $helper->getIdentityMap());
+            $helper->getIdentityMap()
+        );
     }
 
     public function testImportThrowsWithNonMappedIdentity(): void

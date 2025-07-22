@@ -11,7 +11,7 @@ env:
 
 jobs:
   phpunit:
-    name: PHPUnit (PHP ${{ matrix.php }})
+    name: Test PHP ${{ matrix.php }}, ${{ matrix.dependencies }} deps
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -73,7 +73,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: phpunit-logs-php${{ matrix.php }}
+          name: phpunit-logs-php${{ matrix.php }}-${{ matrix.dependencies }}deps
           path: build/logs/phpunit
         continue-on-error: true
 

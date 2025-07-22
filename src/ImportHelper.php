@@ -8,6 +8,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\Persistence\ObjectManager;
 use Symfony\Component\PropertyAccess\PropertyAccess;
 use Symfony\Component\PropertyAccess\PropertyAccessorInterface;
+use Symfony\Component\Uid\AbstractUid;
 
 /**
  * Helper to convert arrays to (Doctrine) entities and DTOs. Uses Reflection to
@@ -195,7 +196,8 @@ class ImportHelper
                 // ('_entityClass' is set) try to create & set it, else use the
                 // value as is.
                 $value = isset($data[$propName]['_entityClass'])
-                    ? $this->objectFromArray($data[$propName],
+                    ? $this->objectFromArray(
+                        $data[$propName],
                         null,
                         $propertyFilter[$propName] ?? [],
                         $isExcludeFilter
@@ -236,6 +238,8 @@ class ImportHelper
                 );
             } elseif (is_a($typeDetails['classname'], \DateTimeInterface::class, true)) {
                 $value = new ($typeDetails['classname'])($data[$propName]);
+            } elseif (is_a($typeDetails['classname'], AbstractUid::class, true)) {
+                $value = ($typeDetails['classname'])::fromString($data[$propName]);
             } else {
                 throw new \RuntimeException("Don't know how to import $className::$propName!");
             }

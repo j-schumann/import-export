@@ -104,6 +104,7 @@ $newInstances = $helper->collectionFromArray([$export], Entity::class);
 * `doctrine/common` for the `ClassUtils` (proxy handling) and `Collection` properties
 * `doctrine/persistence` for the `ObjectManager` (importing references)
 * `symfony/property-access` for setting/reading (private, protected) properties
+* `symfony/uuid` for testing import of UUID values
 
 ## Future Improvements
 

@@ -2,8 +2,7 @@
 <!-- https://phpunit.readthedocs.io/en/latest/configuration.html -->
 <phpunit
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.4/phpunit.xsd"
-        backupGlobals="false"
+        xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
         cacheDirectory=".phpunit.cache"
         colors="true"
         displayDetailsOnIncompleteTests="true"
@@ -15,25 +14,37 @@
         executionOrder="defects"
         failOnWarning="true"
         failOnNotice="true"
-        stopOnFailure="false"
         stopOnError="true"
         testdox="true"
 >
   <coverage/>
+
   <php>
     <ini name="display_errors" value="1"/>
     <ini name="display_startup_errors" value="1"/>
     <ini name="error_reporting" value="32767"/>
     <server name="DOCTRINE_DEPRECATIONS" value="trigger"/>
   </php>
-  <source>
-    <include>
-      <directory>src</directory>
-    </include>
-  </source>
+
   <testsuites>
     <testsuite name="ImportExport Test Suite">
       <directory>tests</directory>
     </testsuite>
   </testsuites>
+
+  <source
+          ignoreSuppressionOfDeprecations="true"
+          restrictNotices="true"
+          restrictWarnings="true"
+  >
+    <include>
+      <directory>src</directory>
+    </include>
+
+    <deprecationTrigger>
+      <function>trigger_deprecation</function>
+      <method>Doctrine\Deprecations\Deprecation::trigger</method>
+      <method>Doctrine\Deprecations\Deprecation::delegateTriggerToBackend</method>
+    </deprecationTrigger>
+  </source>
 </phpunit>
