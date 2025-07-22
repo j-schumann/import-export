@@ -97,17 +97,21 @@ $newInstances = $helper->collectionFromArray([$export], Entity::class);
 * exclude fields from importing (even when they are in the dataset and potentially
   importable) by using the `propertyFilter` argument of `fromArray` and setting
   `isExcludeFilter` to `true`
-* automatically persist generated 
+* Automatically persists generated entities when they are marked for identity 
+  mapping, keeps an internal map of old ⇒ new identifiers. So when a reference
+  from entity A to entity B is found in a later import object, the identity map
+  is checked for matches, to update the reference to the new identifier.
 
 ## Dependencies
 
 * `doctrine/common` for the `ClassUtils` (proxy handling) and `Collection` properties
 * `doctrine/persistence` for the `ObjectManager` (importing references)
 * `symfony/property-access` for setting/reading (private, protected) properties
-* `symfony/uuid` for testing import of UUID values
+* dev: `symfony/uuid` for testing import of UUID values
 
 ## Future Improvements
 
+* when only `doctrine/orm` ^4.0 is supported, remove the "if" in `AbstractOrmTestCase` 
 * what could be done with Symfony's serializer?
   * can already transform object (graphs) to array
   * properties can be marked with groups to be exportable

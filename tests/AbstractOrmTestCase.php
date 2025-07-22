@@ -26,7 +26,8 @@ abstract class AbstractOrmTestCase extends TestCase
     {
         parent::setUp();
 
-        if (method_exists(ORMSetup::class, 'createAttributeMetadataConfig')) {
+        $version = \Composer\InstalledVersions::getVersion('doctrine/orm');
+        if (\Composer\Semver\Comparator::greaterThanOrEqualTo($version, '4.0')) {
             $configuration = ORMSetup::createAttributeMetadataConfig(
                 [__DIR__.'/Fixtures'],
                 true
