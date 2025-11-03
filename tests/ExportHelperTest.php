@@ -14,7 +14,7 @@ use Vrok\ImportExport\Tests\Fixtures\ImportEntity;
 use Vrok\ImportExport\Tests\Fixtures\NestedDTO;
 use Vrok\ImportExport\Tests\Fixtures\TestDTO;
 
-class ExportHelperTest extends TestCase
+final class ExportHelperTest extends TestCase
 {
     public function testExportWithGetter(): void
     {

@@ -15,7 +15,7 @@ use Vrok\ImportExport\Tests\Fixtures\ImportEntity;
 use Vrok\ImportExport\Tests\Fixtures\NestedDTO;
 use Vrok\ImportExport\Tests\Fixtures\TestDTO;
 
-class ImportHelperTest extends AbstractOrmTestCase
+final class ImportHelperTest extends AbstractOrmTestCase
 {
     // region objectFromArray
     public function testImportWithSetter(): void

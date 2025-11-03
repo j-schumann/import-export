@@ -14,7 +14,7 @@ use Vrok\ImportExport\Tests\Fixtures\NestedDTO;
 use Vrok\ImportExport\Tests\Fixtures\RepeatableAttribute;
 use Vrok\ImportExport\Tests\Fixtures\TestDTO;
 
-class ReflectionHelperTest extends TestCase
+final class ReflectionHelperTest extends TestCase
 {
     public function testGetClassAttributeFindsNone(): void
     {
