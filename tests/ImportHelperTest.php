@@ -2,8 +2,6 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
-declare(strict_types=1);
-
 namespace Vrok\ImportExport\Tests;
 
 use Symfony\Component\Uid\UuidV7;
