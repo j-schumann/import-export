@@ -12,8 +12,12 @@
         displayDetailsOnTestsThatTriggerNotices="true"
         displayDetailsOnTestsThatTriggerWarnings="true"
         executionOrder="defects"
-        failOnWarning="true"
+        failOnDeprecation="true"
         failOnNotice="true"
+        failOnPhpunitDeprecation="true"
+        failOnPhpunitNotice="true"
+        failOnPhpunitWarning="true"
+        failOnWarning="true"
         stopOnError="true"
         testdox="true"
 >
@@ -33,6 +37,7 @@
   </testsuites>
 
   <source
+          ignoreIndirectDeprecations="true"
           ignoreSuppressionOfDeprecations="true"
           restrictNotices="true"
           restrictWarnings="true"
