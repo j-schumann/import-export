@@ -21,7 +21,6 @@
         stopOnError="true"
         testdox="true"
 >
-  <coverage/>
 
   <php>
     <ini name="display_errors" value="1"/>
