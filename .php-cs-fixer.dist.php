@@ -14,6 +14,9 @@ return $config
 
         'attribute_empty_parentheses' => true,
 
+        // @Symfony:risky removes strict_types, every file here declares it
+        'declare_strict_types'        => true,
+
         // but force alignment of keys/values in array definitions
         'binary_operator_spaces' => [
             'operators' => [
