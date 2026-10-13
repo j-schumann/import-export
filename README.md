@@ -111,16 +111,46 @@ $newInstances = $helper->collectionFromArray([$export], Entity::class);
 
 ## Future Improvements
 
-* when only `doctrine/orm` ^4.0 is supported, remove the "if" in `AbstractOrmTestCase` 
-* what could be done with Symfony's serializer?
-  * can already transform object (graphs) to array
-  * properties can be marked with groups to be exportable
-  * how to mark properties to only be exported as identifier? new attribute? 
-    how implement that, how is APIP doing this?
-  * how to mark array properties to be treated as DTO-List?
-  * how to ignore some properties without the need to hardcode groups? (exclude-filter)
-  * how to limit to some properties without the need to hardcode groups? (include-filter)
-* evaluate Doctrine's ORM collection attributes to check for allowed element class
+### 2.0: metadata-driven defaults instead of marker attributes
+
+Today every im-/exportable property needs a marker attribute. Measured in fcp-api
+(2026-10): 1104 attributes, 976 of them plain markers without arguments. The
+whitelist they form is almost identical to what Doctrine already knows: of ~435
+mapped properties only 30 are not exportable (21 inverse `OneToMany` sides, 2
+`ManyToMany`, 3 `ManyToOne`, 4 columns) and the ~55 not importable ones are
+nearly all generated ids. The 128 attributes with arguments are derivable, too:
+`referenceByIdentifier: 'id'` sits on toOne associations, `listOf`/`asList` on
+properties that already carry a `@var Foo[]` docblock.
+
+The real cost of opt-in is not the typing but silent data loss: a forgotten (or,
+as in `LockableTrait` of vrok/doctrine-addons < 3.2, wrongly imported) attribute
+drops the field from export and import without any error. Opt-out fails safe: a
+new column is exported until someone excludes it.
+
+Plan:
+
+* Entities: importable/exportable = Doctrine fields + owning-side associations,
+  read from `ClassMetadata`. Generated identifiers are exported but not imported
+  (identity mapping handles them). ToOne associations are exported as identifier,
+  owning `ManyToMany` as list of identifiers.
+* DTOs (no metadata): all typed properties. List element type from
+  `symfony/property-info` (`@var Foo[]`, `list<Foo>`), `_entityClass` stays for
+  interface-typed properties.
+* Attributes become overrides: `#[NotExportable]`/`#[NotImportable]` for the
+  exceptions, `ExportableProperty(referenceByIdentifier)` only to deviate from the
+  default, `listOf` only without docblock. 1.x markers keep working as no-ops
+  during the migration.
+* Then drop the markers from `LockableTrait` in vrok/doctrine-addons 4.0.
+
+Rejected: Symfony's serializer with groups. Groups are per-property attributes
+again, there is no identity mapping and no "export as identifier" without a
+custom normalizer, and API Platform's normalizers interfere. Hand-wired
+fixtures with `PropertyNormalizer` (zeugli) only cover shallow graphs, not the
+DB export/import of fcp-api.
+
+### Other
+
+* when only `doctrine/orm` ^4.0 is supported, remove the "if" in `AbstractOrmTestCase`
 * Improve union type handling (e.g. multiple base types: int|string)
 * not only export to arrays but also directly to files
     * support exporting to multiple files (split to reduce size for large datasets)
