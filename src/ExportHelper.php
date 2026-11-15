@@ -3,7 +3,7 @@
 namespace Vrok\ImportExport;
 
 use Doctrine\Common\Collections\Collection;
-use Doctrine\Common\Util\ClassUtils;
+use Doctrine\Persistence\Proxy;
 use Symfony\Component\PropertyAccess\PropertyAccess;
 use Symfony\Component\PropertyAccess\PropertyAccessorInterface;
 
@@ -12,8 +12,8 @@ use Symfony\Component\PropertyAccess\PropertyAccessorInterface;
  * Uses Reflection to check for properties tagged #[ExportableProperty].
  * Uses Symfony's PropertyAccess to get properties using the correct
  * getters (which also supports hassers and issers).
- * Uses Doctrine's ClassUtils to handle proxies, as we need the correct class
- * name in "_entityClass" and they may prevent access to the property PHP
+ * Resolves Doctrine proxies to their entity class, as we need the correct
+ * class name in "_entityClass" and they may prevent access to the property PHP
  * attributes.
  */
 class ExportHelper
@@ -57,7 +57,7 @@ class ExportHelper
         array $propertyFilter = [],
         bool $isExcludeFilter = false,
     ): array {
-        $className = ClassUtils::getClass($object);
+        $className = self::getClass($object);
         $properties = $this->getExportableProperties($className);
         if ([] === $properties) {
             throw new \RuntimeException("Don't know how to export instance of $className, it has no exportable properties!");
@@ -113,7 +113,7 @@ class ExportHelper
                     // property can accept an interface / parent class later.
                     // This is also consistent with the handling of collections,
                     // which also always store the _entityClass.
-                    $data[$propertyName]['_entityClass'] = ClassUtils::getClass($propValue);
+                    $data[$propertyName]['_entityClass'] = self::getClass($propValue);
                 }
             } elseif (
                 // Keep base types as-is. This can/will cause errors if an array
@@ -182,7 +182,7 @@ class ExportHelper
 
                 // we need the entityClass here, as the collection may contain
                 // mixed types (table inheritance or different DTO versions)
-                $export['_entityClass'] = ClassUtils::getClass($element);
+                $export['_entityClass'] = self::getClass($element);
 
                 $values[] = $export;
             }
@@ -230,5 +230,15 @@ class ExportHelper
     protected function isExportableClass(string $className): bool
     {
         return [] !== $this->getExportableProperties($className);
+    }
+
+    private static function getClass(object $object): string
+    {
+        // @todo remove when ORM 3.x support is removed, ORM 4 has no proxy classes
+        if ($object instanceof Proxy) {
+            return get_parent_class($object);
+        }
+
+        return $object::class;
     }
 }

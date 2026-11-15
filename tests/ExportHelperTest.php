@@ -4,6 +4,7 @@
 
 namespace Vrok\ImportExport\Tests;
 
+use Doctrine\Persistence\Proxy;
 use PHPUnit\Framework\TestCase;
 use Vrok\ImportExport\ExportHelper;
 use Vrok\ImportExport\Tests\Fixtures\AutoincrementEntity;
@@ -482,6 +483,33 @@ final class ExportHelperTest extends TestCase
                 'dtoList'       => [],
                 'arrayProp'     => [],
                 '_entityClass'  => ExportEntity::class,
+            ],
+        ], $data);
+    }
+
+    public function testCollectionToArrayWithProxy(): void
+    {
+        $helper = new ExportHelper();
+
+        $proxy = new class extends ExportEntity implements Proxy {
+            public function __load(): void
+            {
+            }
+
+            public function __isInitialized(): bool
+            {
+                return true;
+            }
+        };
+        $proxy->id = 1;
+
+        $data = $helper->collectionToArray([$proxy], ['id', 'name']);
+
+        self::assertSame([
+            [
+                'id'           => 1,
+                'name'         => ' via getter',
+                '_entityClass' => ExportEntity::class,
             ],
         ], $data);
     }

@@ -104,14 +104,15 @@ $newInstances = $helper->collectionFromArray([$export], Entity::class);
 
 ## Dependencies
 
-* `doctrine/common` for the `ClassUtils` (proxy handling) and `Collection` properties
-* `doctrine/persistence` for the `ObjectManager` (importing references)
+* `doctrine/persistence` for the `ObjectManager` (importing references) and the proxy handling
 * `symfony/property-access` for setting/reading (private, protected) properties
 * dev: `symfony/uuid` for testing import of UUID values
 
 ## Future Improvements
 
 * when only `doctrine/orm` ^4.0 is supported, remove the "if" in `AbstractOrmTestCase` 
+* when ORM 3.x support is removed, remove the proxy check in `ExportHelper::getClass()`, ORM 4
+  has no proxy classes
 * what could be done with Symfony's serializer?
   * can already transform object (graphs) to array
   * properties can be marked with groups to be exportable
